@@ -1,1 +1,271 @@
-<!DOCTYPE html><html><body><h1>HOT_TRADING V2 — bootstrap test 2026-05-14</h1></body></html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>HOT_TRADING · R4 今日持仓</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+         max-width: 1100px; margin: 32px auto; padding: 0 24px; color: #222; line-height: 1.55; }
+  h1 { border-bottom: 3px solid #1f77b4; padding-bottom: 6px; margin-bottom: 8px; }
+  .meta { color: #6b7280; font-size: 90%; margin-bottom: 16px; }
+  .meta code { background: #f3f4f6; padding: 1px 6px; border-radius: 3px; }
+  .regime-box { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px;
+                padding: 12px 18px; margin: 14px 0 18px; font-size: 95%; }
+  .regime-box .label { font-weight: 700; color: #92400e; }
+  .regime-box code { background: #fff; padding: 1px 5px; border-radius: 3px; }
+  .regime-asym { background: #dcfce7; border-color: #16a34a; }
+  .regime-asym .label { color: #166534; }
+  .input-box { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px;
+               padding: 16px 20px; margin: 16px 0 24px; display: flex; align-items: center; gap: 12px; }
+  .input-box label { font-weight: 600; }
+  .input-box input { font-size: 18px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px;
+                     width: 200px; font-family: ui-monospace, Consolas, monospace; }
+  .input-box .hint { color: #6b7280; font-size: 88%; }
+  table { width: 100%; border-collapse: collapse; font-size: 93%; }
+  th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: right; }
+  th { background: #f3f4f6; font-weight: 600; }
+  td:nth-child(1), td:nth-child(2), th:nth-child(1), th:nth-child(2) { text-align: left; }
+  tr.summary td { background: #fef3c7; font-weight: 600; }
+  .pos { color: #15803d; }
+  .neg { color: #b91c1c; }
+  .signal-active { font-weight: 700; color: #1f77b4; }
+  .signal-muted { color: #9ca3af; }
+  .footnote { color: #6b7280; font-size: 85%; margin-top: 16px; line-height: 1.5; }
+  code.ticker { background: #eef2ff; padding: 1px 6px; border-radius: 3px; font-family: ui-monospace, Consolas, monospace; }
+</style>
+</head>
+<body>
+
+<h1>HOT_TRADING · R4 今日持仓</h1>
+<div class="meta">
+  策略：<code id="m-strategy"></code> &nbsp;|&nbsp;
+  信号日：<code id="m-signal"></code> &nbsp;|&nbsp;
+  价格日：<code id="m-price"></code> &nbsp;|&nbsp;
+  生成时间：<code id="m-gen"></code>
+</div>
+
+<div id="regime-box" class="regime-box">
+  <span class="label">当前 regime:</span>
+  <code id="m-regime"></code> →
+  本周使用信号 <code id="m-signal-used" class="signal-active"></code>
+  &nbsp;·&nbsp;
+  SPY 20d ret = <code id="m-spy-ret"></code>, 20d 年化 vol = <code id="m-spy-vol"></code>%
+  (vol 阈值 <code id="m-vol-thr"></code>%)
+</div>
+
+<div class="input-box">
+  <label for="capital">本次投入总金额 ($)</label>
+  <input type="number" id="capital" value="100000" step="1000" min="0">
+  <span class="hint">输入后表格自动重算</span>
+</div>
+
+<table id="tbl">
+  <thead>
+    <tr>
+      <th>Ticker</th>
+      <th>公司名</th>
+      <th>Asym120</th>
+      <th>A20 (overnight)</th>
+      <th>最新价 ($)</th>
+      <th>分配金额 ($)</th>
+      <th>买入股数</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+  <tfoot>
+    <tr class="summary">
+      <td colspan="5" style="text-align:right">合计</td>
+      <td id="s-alloc">—</td>
+      <td id="s-shares">—</td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="footnote">
+  · <b>R4 规则</b>：每周一调仓。在最近周五的 SP500 池里按 20 日成交额排名取 top 15。<br>
+  · <b>Regime 切换</b>：若 SPY 过去 20 日收益 &gt; 0 <i>且</i> 过去 20 日年化波动率 &lt; 18%（强牛市），用 <b>Asym120</b>（下行波动率/上行波动率）信号砍 5；否则用 <b>A20</b>（过去 20 日累积夜盘收益 = retail over-buy）砍 5。<br>
+  · 剩 10 只等权。每只分配 = 总金额 ÷ 持仓数；买入股数 = 分配 ÷ 最新价。<br>
+  · 边界提醒：R4 alpha 来源是 post-2009 retail-active era；2000-2008 期间 R4 不工作。每年 review 5y 滚动 R4-D alpha，若连续 3 年 &lt; 0 应降级回 v9_W (纯 Asym120)。
+</div>
+
+<script>
+const DATA = {
+  "strategy": "R4 (regime-conditional Asym120 + A20)",
+  "signal_date": "2026-05-08",
+  "price_date": "2026-05-13",
+  "generated_at": "2026-05-14 16:28:49",
+  "regime": "asym",
+  "signal_used": "Asym120",
+  "spy_20d_ret_pct": 8.56,
+  "spy_20d_vol_pct": 10.45,
+  "spy_vol_threshold": 18.0,
+  "n_holdings": 10,
+  "weight_per_stock": 0.1,
+  "holdings": [
+    {
+      "ticker": "NVDA",
+      "name": "Nvidia",
+      "asym120": 0.9154,
+      "a20": 0.0126,
+      "signal_used": "asym120",
+      "price": 225.83,
+      "price_date": "2026-05-13"
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla, Inc.",
+      "asym120": 0.8146,
+      "a20": 0.0337,
+      "signal_used": "asym120",
+      "price": 445.27,
+      "price_date": "2026-05-13"
+    },
+    {
+      "ticker": "MU",
+      "name": "Micron Technology",
+      "asym120": 0.7869,
+      "a20": 0.2788,
+      "signal_used": "asym120",
+      "price": 803.63,
+      "price_date": "2026-05-13"
+    },
+    {
+      "ticker": "SNDK",
+      "name": "Sandisk",
+      "asym120": 0.8728,
+      "a20": 0.2456,
+      "signal_used": "asym120",
+      "price": 1447.23,
+      "price_date": "2026-05-13"
+    },
+    {
+      "ticker": "AMD",
+      "name": "Advanced Micro Devices",
+      "asym120": 0.7912,
+      "a20": 0.3576,
+      "signal_used": "asym120",
+      "price": 445.5,
+      "price_date": "2026-05-13"
+    },
+    {
+      "ticker": "INTC",
+      "name": "Intel",
+      "asym120": 0.6399,
+      "a20": 0.3799,
+      "signal_used": "asym120",
+      "price": 120.29,
+      "price_date": "2026-05-13"
+    },
+    {
+      "ticker": "META",
+      "name": "Meta Platforms",
+      "asym120": 0.8331,
+      "a20": -0.0764,
+      "signal_used": "asym120",
+      "price": 616.63,
+      "price_date": "2026-05-13"
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "Alphabet Inc. (Class A)",
+      "asym120": 0.5515,
+      "a20": 0.1202,
+      "signal_used": "asym120",
+      "price": 402.62,
+      "price_date": "2026-05-13"
+    },
+    {
+      "ticker": "GOOG",
+      "name": "Alphabet Inc. (Class C)",
+      "asym120": 0.5362,
+      "a20": 0.1091,
+      "signal_used": "asym120",
+      "price": 399.04,
+      "price_date": "2026-05-13"
+    },
+    {
+      "ticker": "ORCL",
+      "name": "Oracle Corporation",
+      "asym120": 0.8204,
+      "a20": 0.2132,
+      "signal_used": "asym120",
+      "price": 189.76,
+      "price_date": "2026-05-13"
+    }
+  ]
+};
+
+document.getElementById('m-strategy').textContent = DATA.strategy;
+document.getElementById('m-signal').textContent = DATA.signal_date;
+document.getElementById('m-price').textContent = DATA.price_date;
+document.getElementById('m-gen').textContent = DATA.generated_at;
+document.getElementById('m-regime').textContent = DATA.regime;
+document.getElementById('m-signal-used').textContent = DATA.signal_used;
+document.getElementById('m-spy-ret').textContent = (DATA.spy_20d_ret_pct >= 0 ? '+' : '') + DATA.spy_20d_ret_pct + '%';
+document.getElementById('m-spy-vol').textContent = DATA.spy_20d_vol_pct;
+document.getElementById('m-vol-thr').textContent = DATA.spy_vol_threshold;
+
+if (DATA.regime === 'asym') {
+  document.getElementById('regime-box').classList.add('regime-asym');
+}
+
+function fmtMoney(v) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtShares(v) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  return v.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function fmtSig(v, isPercent) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  if (isPercent) return (v * 100).toFixed(2) + '%';
+  return v.toFixed(3);
+}
+
+function recalc() {
+  const cap = parseFloat(document.getElementById('capital').value) || 0;
+  const n = DATA.n_holdings;
+  const perStock = n > 0 ? cap / n : 0;
+  const activeSignal = DATA.holdings.length > 0 ? DATA.holdings[0].signal_used : 'asym120';
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  let totalShares = 0;
+
+  DATA.holdings.forEach(h => {
+    const price = h.price;
+    let shares = 0;
+    if (price && price > 0) {
+      shares = perStock / price;
+    }
+    totalShares += shares;
+
+    const asymClass = activeSignal === 'asym120' ? 'signal-active' : 'signal-muted';
+    const a20Class = activeSignal === 'a20' ? 'signal-active' : 'signal-muted';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><code class="ticker">${h.ticker}</code></td>
+      <td>${h.name || ''}</td>
+      <td class="${asymClass}">${fmtSig(h.asym120, false)}</td>
+      <td class="${a20Class}">${fmtSig(h.a20, true)}</td>
+      <td>${price ? fmtMoney(price) : '—'}</td>
+      <td>${fmtMoney(perStock)}</td>
+      <td><b>${fmtShares(shares)}</b></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('s-alloc').textContent = fmtMoney(perStock * n);
+  document.getElementById('s-shares').textContent = '—';
+}
+
+document.getElementById('capital').addEventListener('input', recalc);
+recalc();
+</script>
+
+</body>
+</html>
