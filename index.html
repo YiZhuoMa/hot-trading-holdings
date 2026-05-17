@@ -44,6 +44,10 @@
   生成时间：<code id="m-gen"></code>
 </div>
 
+<div class="meta" style="font-size:96%;color:#1f2937">
+  <b>持仓作用期：</b><code id="m-period"></code> &nbsp;（周一调仓 → 持有至周五）
+</div>
+
 <div id="regime-box" class="regime-box">
   <span class="label">当前 regime:</span>
   <code id="m-regime"></code> →
@@ -64,6 +68,8 @@
   <input type="number" id="capital" value="100000" step="1000" min="0">
   <span class="hint">输入后表格自动重算</span>
 </div>
+
+<div id="deploy-line" class="meta" style="font-size:97%;margin:-10px 0 18px;color:#1f2937"></div>
 
 <table id="tbl">
   <thead>
@@ -99,8 +105,10 @@
 const DATA = {
   "strategy": "R4 (regime-conditional Asym120 + A20) + timing gate",
   "signal_date": "2026-05-15",
+  "period_start": "2026-05-18",
+  "period_end": "2026-05-22",
   "price_date": "2026-05-15",
-  "generated_at": "2026-05-17 21:22:39",
+  "generated_at": "2026-05-17 21:47:15",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 4.09,
@@ -219,6 +227,9 @@ if (DATA.regime === 'asym') {
   document.getElementById('regime-box').classList.add('regime-asym');
 }
 
+document.getElementById('m-period').textContent =
+  (DATA.period_start || '?') + '  ~  ' + (DATA.period_end || '?');
+
 const GATE_POS = (DATA.gate_pos === undefined || DATA.gate_pos === null) ? 1 : DATA.gate_pos;
 document.getElementById('m-gate').textContent = GATE_POS.toFixed(4);
 document.getElementById('m-gate-inv').textContent = (GATE_POS * 100).toFixed(0) + '%';
@@ -276,8 +287,14 @@ function recalc() {
     tbody.appendChild(tr);
   });
 
+  const deployed = perStock * n;          // = cap × gate 仓位
+  const cash = cap - deployed;
+  document.getElementById('deploy-line').innerHTML =
+    '→ gate 仓位 <b>' + (GATE_POS * 100).toFixed(0) + '%</b>：实际买入 <b>$'
+    + fmtMoney(deployed) + '</b>，留存现金 <b>$' + fmtMoney(cash) + '</b>';
+
   document.getElementById('s-alloc').textContent =
-    fmtMoney(perStock * n) + (GATE_POS < 1 ? '  (现金 ' + fmtMoney(cap * (1 - GATE_POS)) + ')' : '');
+    fmtMoney(deployed) + (GATE_POS < 1 ? '  (现金 ' + fmtMoney(cash) + ')' : '');
   document.getElementById('s-shares').textContent = '—';
 }
 
