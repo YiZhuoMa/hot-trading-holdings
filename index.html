@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>HOT_TRADING · R4 今日持仓</title>
+<title>HOT_TRADING · R4 持仓计划</title>
 <style>
   body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
          max-width: 1100px; margin: 32px auto; padding: 0 24px; color: #222; line-height: 1.55; }
@@ -36,7 +36,7 @@
 </head>
 <body>
 
-<h1>HOT_TRADING · R4 今日持仓</h1>
+<h1>HOT_TRADING · R4 持仓计划</h1>
 <div class="meta">
   策略：<code id="m-strategy"></code> &nbsp;|&nbsp;
   信号日：<code id="m-signal"></code> &nbsp;|&nbsp;
@@ -51,7 +51,7 @@
 <div id="regime-box" class="regime-box">
   <span class="label">当前 regime:</span>
   <code id="m-regime"></code> →
-  本周使用信号 <code id="m-signal-used" class="signal-active"></code>
+  本期使用信号 <code id="m-signal-used" class="signal-active"></code>
   &nbsp;·&nbsp;
   SPY 20d ret = <code id="m-spy-ret"></code>, 20d 年化 vol = <code id="m-spy-vol"></code>%
   (vol 阈值 <code id="m-vol-thr"></code>%)
@@ -108,16 +108,14 @@ const DATA = {
   "period_start": "2026-05-18",
   "period_end": "2026-05-22",
   "price_date": "2026-05-15",
-  "generated_at": "2026-05-17 21:47:15",
+  "generated_at": "2026-05-17 22:04:26",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 4.09,
   "spy_20d_vol_pct": 10.74,
   "spy_vol_threshold": 18.0,
   "n_holdings": 10,
-  "weight_per_stock": 0.1,
   "gate_pos": 1.0,
-  "effective_weight_per_stock": 0.1,
   "cash_pct": 0.0,
   "holdings": [
     {
