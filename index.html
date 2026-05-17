@@ -53,6 +53,12 @@
   (vol 阈值 <code id="m-vol-thr"></code>%)
 </div>
 
+<div id="gate-box" class="regime-box" style="background:#e0f2fe;border-color:#0284c7">
+  <span class="label" style="color:#075985">择时 gate:</span>
+  本周仓位 <code id="m-gate"></code> &nbsp;·&nbsp;
+  持仓 <code id="m-gate-inv"></code> / 现金 <code id="m-gate-cash"></code>
+</div>
+
 <div class="input-box">
   <label for="capital">本次投入总金额 ($)</label>
   <input type="number" id="capital" value="100000" step="1000" min="0">
@@ -84,16 +90,17 @@
 <div class="footnote">
   · <b>R4 规则</b>：每周一调仓。在最近周五的 SP500 池里按 20 日成交额排名取 top 15。<br>
   · <b>Regime 切换</b>：若 SPY 过去 20 日收益 &gt; 0 <i>且</i> 过去 20 日年化波动率 &lt; 18%（强牛市），用 <b>Asym120</b>（下行波动率/上行波动率）信号砍 5；否则用 <b>A20</b>（过去 20 日累积夜盘收益 = retail over-buy）砍 5。<br>
-  · 剩 10 只等权。每只分配 = 总金额 ÷ 持仓数；买入股数 = 分配 ÷ 最新价。<br>
+  · 剩 10 只等权。<br>
+  · <b>择时 gate</b>：在 R4 之上叠加周度仓位择时。SPY 跌破 200 日均线连续 8-9 周且回撤 ≥12% 才减仓，R4 自身动能回升即回补。每只分配 = 总金额 × gate 仓位 ÷ 持仓数；剩余持现金。<br>
   · 边界提醒：R4 alpha 来源是 post-2009 retail-active era；2000-2008 期间 R4 不工作。每年 review 5y 滚动 R4-D alpha，若连续 3 年 &lt; 0 应降级回 v9_W (纯 Asym120)。
 </div>
 
 <script>
 const DATA = {
-  "strategy": "R4 (regime-conditional Asym120 + A20)",
+  "strategy": "R4 (regime-conditional Asym120 + A20) + timing gate",
   "signal_date": "2026-05-08",
   "price_date": "2026-05-15",
-  "generated_at": "2026-05-16 07:31:56",
+  "generated_at": "2026-05-17 20:47:01",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 8.56,
@@ -101,6 +108,9 @@ const DATA = {
   "spy_vol_threshold": 18.0,
   "n_holdings": 10,
   "weight_per_stock": 0.1,
+  "gate_pos": 1.0,
+  "effective_weight_per_stock": 0.1,
+  "cash_pct": 0.0,
   "holdings": [
     {
       "ticker": "NVDA",
@@ -209,6 +219,12 @@ if (DATA.regime === 'asym') {
   document.getElementById('regime-box').classList.add('regime-asym');
 }
 
+const GATE_POS = (DATA.gate_pos === undefined || DATA.gate_pos === null) ? 1 : DATA.gate_pos;
+document.getElementById('m-gate').textContent = GATE_POS.toFixed(4);
+document.getElementById('m-gate-inv').textContent = (GATE_POS * 100).toFixed(0) + '%';
+document.getElementById('m-gate-cash').textContent =
+  ((DATA.cash_pct !== undefined ? DATA.cash_pct : (1 - GATE_POS) * 100)).toFixed(1) + '%';
+
 function fmtMoney(v) {
   if (v === null || v === undefined || isNaN(v)) return '—';
   return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -228,7 +244,8 @@ function fmtSig(v, isPercent) {
 function recalc() {
   const cap = parseFloat(document.getElementById('capital').value) || 0;
   const n = DATA.n_holdings;
-  const perStock = n > 0 ? cap / n : 0;
+  // 实际部署 = 总金额 × gate 仓位 / 持仓数; 剩余 (1-gate) 持现金
+  const perStock = n > 0 ? cap * GATE_POS / n : 0;
   const activeSignal = DATA.holdings.length > 0 ? DATA.holdings[0].signal_used : 'asym120';
 
   const tbody = document.getElementById('tbody');
@@ -259,7 +276,8 @@ function recalc() {
     tbody.appendChild(tr);
   });
 
-  document.getElementById('s-alloc').textContent = fmtMoney(perStock * n);
+  document.getElementById('s-alloc').textContent =
+    fmtMoney(perStock * n) + (GATE_POS < 1 ? '  (现金 ' + fmtMoney(cap * (1 - GATE_POS)) + ')' : '');
   document.getElementById('s-shares').textContent = '—';
 }
 
