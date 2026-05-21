@@ -2,11 +2,17 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>HOT_TRADING · R4 持仓计划</title>
+<title>美股策略 · 监控页</title>
+<script src="https://cdn.plot.ly/plotly-basic-2.35.2.min.js"></script>
 <style>
   body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
          max-width: 1100px; margin: 32px auto; padding: 0 24px; color: #222; line-height: 1.55; }
   h1 { border-bottom: 3px solid #1f77b4; padding-bottom: 6px; margin-bottom: 8px; }
+  .nav-bar { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px;
+             padding: 10px 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+  .nav-bar label { font-weight: 600; }
+  .nav-bar select { font-size: 14px; padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 4px;
+                    background: white; }
   .meta { color: #6b7280; font-size: 90%; margin-bottom: 16px; }
   .meta code { background: #f3f4f6; padding: 1px 6px; border-radius: 3px; }
   .regime-box { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px;
@@ -32,9 +38,39 @@
   .signal-muted { color: #9ca3af; }
   .footnote { color: #6b7280; font-size: 85%; margin-top: 16px; line-height: 1.5; }
   code.ticker { background: #eef2ff; padding: 1px 6px; border-radius: 3px; font-family: ui-monospace, Consolas, monospace; }
+
+  /* IndexTrading 视图 */
+  .it-controls { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px;
+                 padding: 12px 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+  .it-detail { margin-top: 16px; padding: 16px 20px; background: #fafafa; border: 1px solid #e5e7eb;
+               border-radius: 6px; min-height: 60px; }
+  .it-detail .placeholder { color: #999; }
+  .it-detail .header { font-size: 18px; font-weight: 700; margin-bottom: 10px;
+                       border-left: 4px solid #1f77b4; padding-left: 10px; }
+  .it-kv { padding: 3px 0; }
+  .it-kv .k { color: #666; display: inline-block; width: 140px; }
+  .it-kv .v { font-family: ui-monospace, Consolas, monospace; }
+  .it-badge { display: inline-block; padding: 2px 10px; border-radius: 12px;
+              color: white; font-size: 12px; font-weight: bold; margin-right: 6px; }
+  .it-badge-buy { background: #d62728; }
+  .it-badge-sell { background: #2ca02c; }
+  .it-explanation { margin-top: 8px; padding: 10px; background: white; border-radius: 4px;
+                    font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: pre-wrap;
+                    border: 1px solid #e5e7eb; }
 </style>
 </head>
 <body>
+
+<div class="nav-bar">
+  <label for="strategy-select">策略：</label>
+  <select id="strategy-select">
+    <option value="hot">HotTrading</option>
+    <option value="index">IndexTrading</option>
+  </select>
+</div>
+
+<!-- ==================== HotTrading 视图 ==================== -->
+<div id="view-hot">
 
 <h1>HOT_TRADING · R4 持仓计划</h1>
 <div class="meta">
@@ -100,6 +136,45 @@
   · <b>择时 gate</b>：在 R4 之上叠加周度仓位择时。SPY 跌破 200 日均线连续 8-9 周且回撤 ≥12% 才减仓，R4 自身动能回升即回补。每只分配 = 总金额 × gate 仓位 ÷ 持仓数；剩余持现金。<br>
   · 边界提醒：R4 alpha 来源是 post-2009 retail-active era；2000-2008 期间 R4 不工作。每年 review 5y 滚动 R4-D alpha，若连续 3 年 &lt; 0 应降级回 v9_W (纯 Asym120)。
 </div>
+
+</div>
+<!-- /view-hot -->
+
+<!-- ==================== IndexTrading 视图 ==================== -->
+<div id="view-index" style="display:none">
+
+<h1>IndexTrading · 模拟交易</h1>
+<div class="meta">
+  数据起点：<code>2026-01-26</code> &nbsp;|&nbsp;
+  数据源：<code>production_operation_usa.index_strategy_simulation_trading</code> &nbsp;|&nbsp;
+  生成时间：<code id="it-gen"></code>
+</div>
+
+<div class="it-controls">
+  <label for="symbol-select">标的：</label>
+  <select id="symbol-select">
+    <option value="spy">SPY</option>
+    <option value="qqq">QQQ</option>
+  </select>
+  <span class="hint" style="color:#6b7280;font-size:88%;margin-left:8px">
+    左轴 = 策略累计总资产（虚线）　右轴 = 标的复权价（实线）　红/绿点 = 买/卖信号（标在复权价上）　点击查看明细
+  </span>
+</div>
+
+<div id="it-chart" style="height:560px"></div>
+
+<div id="it-detail" class="it-detail">
+  <div class="placeholder">点击图中的红 / 绿点查看当日明细 →</div>
+</div>
+
+<div class="footnote">
+  · <b>信号点</b>：当日 action 含 "买入"（含跳过买入·无现金）标红；含 "卖出"（含跳过卖出·min_profit）标绿；"无操作" 不画点。<br>
+  · <b>双 Y 轴</b>：策略 total_assets（虚线·左轴）与标的 adjusted_close（实线·右轴）各自独立刻度；信号点标在复权价上。<br>
+  · 点击点查看 explanation 原始文本，"跳过买入（无现金）" / "跳过卖出（min_profit）" 等细节由 explanation 自身说明。
+</div>
+
+</div>
+<!-- /view-index -->
 
 <script>
 const DATA = {
@@ -210,7 +285,1540 @@ const DATA = {
     }
   ]
 };
+const DATA_INDEX = {
+  "generated_at": "2026-05-21 11:38:45",
+  "start_date": "2026-01-26",
+  "rows": [
+    {
+      "trade_date": "2026-01-26",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": null,
+      "qqq_avg_cost": null,
+      "spy_total_assets": 50000.0,
+      "qqq_total_assets": 50000.0,
+      "total_assets": 100000.0,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-01-27",
+      "spy_action": "买入 14.3784 股 @ $695.49",
+      "qqq_action": "买入 15.8446 股 @ $631.13",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 631.13,
+      "spy_total_assets": 50000.0,
+      "qqq_total_assets": 50000.0,
+      "total_assets": 100000.0,
+      "explanation": "QQQ trend 买入 20%，15.8446 股 @ $631.13；SPY trend 买入 20%，14.3784 股 @ $695.49"
+    },
+    {
+      "trade_date": "2026-01-28",
+      "spy_action": "无操作",
+      "qqq_action": "买入 15.8028 股 @ $633.22",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49998.99,
+      "qqq_total_assets": 50033.12,
+      "total_assets": 100032.11,
+      "explanation": "QQQ trend 买入 20%，15.8028 股 @ $633.22"
+    },
+    {
+      "trade_date": "2026-01-29",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49979.15,
+      "qqq_total_assets": 49913.17,
+      "total_assets": 99892.32,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-01-30",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49949.39,
+      "qqq_total_assets": 49673.92,
+      "total_assets": 99623.31,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-03",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49914.31,
+      "qqq_total_assets": 49504.6,
+      "total_assets": 99418.91,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-04",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49866.28,
+      "qqq_total_assets": 49163.76,
+      "total_assets": 99030.04,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-05",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49743.06,
+      "qqq_total_assets": 48887.8,
+      "total_assets": 98630.86,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-10",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49951.54,
+      "qqq_total_assets": 49344.79,
+      "total_assets": 99296.33,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-11",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49949.24,
+      "qqq_total_assets": 49396.69,
+      "total_assets": 99345.93,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-12",
+      "spy_action": "跳过卖出（min_profit）",
+      "qqq_action": "跳过卖出（min_profit）",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49795.54,
+      "qqq_total_assets": 49002.04,
+      "total_assets": 98797.58,
+      "explanation": "QQQ close_55 卖出 50% 触发，但当前价 $600.64 < 平均成本 $632.17×1.30 = $821.83，跳过；SPY close_55 卖出 50% 触发，但当前价 $681.27 < 平均成本 $695.49×1.30 = $904.14，跳过"
+    },
+    {
+      "trade_date": "2026-02-13",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49802.44,
+      "qqq_total_assets": 49042.55,
+      "total_assets": 98844.99,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-17",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49818.26,
+      "qqq_total_assets": 49022.93,
+      "total_assets": 98841.19,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-18",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49867.72,
+      "qqq_total_assets": 49165.03,
+      "total_assets": 99032.75,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-19",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49841.69,
+      "qqq_total_assets": 49091.61,
+      "total_assets": 98933.3,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-20",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49912.87,
+      "qqq_total_assets": 49260.6,
+      "total_assets": 99173.47,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-23",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49811.64,
+      "qqq_total_assets": 49026.41,
+      "total_assets": 98838.06,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-24",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49882.96,
+      "qqq_total_assets": 49230.85,
+      "total_assets": 99113.81,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-25",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49966.35,
+      "qqq_total_assets": 49509.67,
+      "total_assets": 99476.02,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-26",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49911.0,
+      "qqq_total_assets": 49274.21,
+      "total_assets": 99185.21,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-02-27",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49863.41,
+      "qqq_total_assets": 49212.5,
+      "total_assets": 99075.9,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-02",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49869.01,
+      "qqq_total_assets": 49237.82,
+      "total_assets": 99106.83,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-03",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49782.02,
+      "qqq_total_assets": 49031.79,
+      "total_assets": 98813.82,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-04",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49851.04,
+      "qqq_total_assets": 49322.0,
+      "total_assets": 99173.04,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-05",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49796.11,
+      "qqq_total_assets": 49263.77,
+      "total_assets": 99059.88,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-06",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49667.72,
+      "qqq_total_assets": 48973.88,
+      "total_assets": 98641.59,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-09",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49752.4,
+      "qqq_total_assets": 49227.37,
+      "total_assets": 98979.78,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-10",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49736.73,
+      "qqq_total_assets": 49227.69,
+      "total_assets": 98964.42,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-11",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49724.51,
+      "qqq_total_assets": 49225.16,
+      "total_assets": 98949.67,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-12",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49576.85,
+      "qqq_total_assets": 48895.08,
+      "total_assets": 98471.92,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-13",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49522.64,
+      "qqq_total_assets": 48783.04,
+      "total_assets": 98305.68,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-16",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49619.55,
+      "qqq_total_assets": 48993.82,
+      "total_assets": 98613.36,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-17",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49644.85,
+      "qqq_total_assets": 49086.54,
+      "total_assets": 98731.4,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-18",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49510.27,
+      "qqq_total_assets": 48820.39,
+      "total_assets": 98330.66,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-19",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49486.84,
+      "qqq_total_assets": 48760.89,
+      "total_assets": 98247.73,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-20",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49325.37,
+      "qqq_total_assets": 48414.04,
+      "total_assets": 97739.4,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-23",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49423.28,
+      "qqq_total_assets": 48602.02,
+      "total_assets": 98025.31,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-24",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49391.65,
+      "qqq_total_assets": 48474.8,
+      "total_assets": 97866.45,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-25",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49443.99,
+      "qqq_total_assets": 48596.33,
+      "total_assets": 98040.31,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-26",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49275.33,
+      "qqq_total_assets": 48152.31,
+      "total_assets": 97427.64,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-27",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49117.17,
+      "qqq_total_assets": 47797.55,
+      "total_assets": 96914.72,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-30",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49086.69,
+      "qqq_total_assets": 47661.46,
+      "total_assets": 96748.15,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-03-31",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49350.82,
+      "qqq_total_assets": 48259.6,
+      "total_assets": 97610.41,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-01",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49421.27,
+      "qqq_total_assets": 48485.24,
+      "total_assets": 97906.51,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-02",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49429.75,
+      "qqq_total_assets": 48506.45,
+      "total_assets": 97936.2,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-06",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49474.33,
+      "qqq_total_assets": 48617.85,
+      "total_assets": 98092.17,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-07",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49478.5,
+      "qqq_total_assets": 48620.69,
+      "total_assets": 98099.19,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-08",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 632.1736,
+      "spy_total_assets": 49719.91,
+      "qqq_total_assets": 49174.52,
+      "total_assets": 98894.43,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-09",
+      "spy_action": "无操作",
+      "qqq_action": "买入 16.1603 股 @ $610.19",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 624.7426,
+      "spy_total_assets": 49775.99,
+      "qqq_total_assets": 49304.28,
+      "total_assets": 99080.26,
+      "explanation": "QQQ trend 买入 20%，16.1603 股 @ $610.19；SPY 趋势/反转/抄底信号触发，但 ma55 风险窗口期，buy 被一票否决"
+    },
+    {
+      "trade_date": "2026-04-10",
+      "spy_action": "跳过卖出（min_profit）",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 624.7426,
+      "spy_total_assets": 49769.52,
+      "qqq_total_assets": 49346.35,
+      "total_assets": 99115.86,
+      "explanation": "SPY close_55 卖出 100% 触发，但当前价 $679.46 < 平均成本 $695.49×1.30 = $904.14，跳过"
+    },
+    {
+      "trade_date": "2026-04-13",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 624.7426,
+      "spy_total_assets": 49864.99,
+      "qqq_total_assets": 49648.49,
+      "total_assets": 99513.48,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-14",
+      "spy_action": "无操作",
+      "qqq_action": "买入 15.9670 股 @ $628.60",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 625.7083,
+      "spy_total_assets": 49985.19,
+      "qqq_total_assets": 50184.42,
+      "total_assets": 100169.61,
+      "explanation": "QQQ trend 买入 20%，15.9670 股 @ $628.60；SPY 趋势/反转/抄底信号触发，但 ma55 风险窗口期，buy 被一票否决"
+    },
+    {
+      "trade_date": "2026-04-15",
+      "spy_action": "无操作",
+      "qqq_action": "买入 15.8388 股 @ $637.40",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50063.98,
+      "qqq_total_assets": 50745.63,
+      "total_assets": 100809.62,
+      "explanation": "QQQ trend 买入 20%，15.8388 股 @ $637.40（现金不足，目标 $10,149.13 → 实际 $10,095.64）；SPY 趋势/反转/抄底信号触发，但 ma55 风险窗口期，buy 被一票否决"
+    },
+    {
+      "trade_date": "2026-04-16",
+      "spy_action": "无操作",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50088.71,
+      "qqq_total_assets": 50990.05,
+      "total_assets": 101078.76,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY 趋势/反转/抄底信号触发，但 ma55 风险窗口期，buy 被一票否决"
+    },
+    {
+      "trade_date": "2026-04-17",
+      "spy_action": "无操作",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50210.64,
+      "qqq_total_assets": 51657.21,
+      "total_assets": 101867.85,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY 趋势/反转/抄底信号触发，但 ma55 风险窗口期，buy 被一票否决"
+    },
+    {
+      "trade_date": "2026-04-20",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50190.23,
+      "qqq_total_assets": 51493.2,
+      "total_assets": 101683.43,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-21",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 695.49,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50123.51,
+      "qqq_total_assets": 51297.35,
+      "total_assets": 101420.86,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-22",
+      "spy_action": "买入 14.1241 股 @ $711.21",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 703.2799,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50226.03,
+      "qqq_total_assets": 52155.59,
+      "total_assets": 102381.62,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20%，14.1241 股 @ $711.21"
+    },
+    {
+      "trade_date": "2026-04-23",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 703.2799,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50147.36,
+      "qqq_total_assets": 51861.81,
+      "total_assets": 102009.17,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-24",
+      "spy_action": "买入 14.0919 股 @ $713.94",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 706.8067,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50303.84,
+      "qqq_total_assets": 52853.8,
+      "total_assets": 103157.64,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20%，14.0919 股 @ $713.94"
+    },
+    {
+      "trade_date": "2026-04-27",
+      "spy_action": "买入 14.0823 股 @ $715.17",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 708.8847,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50356.23,
+      "qqq_total_assets": 52881.66,
+      "total_assets": 103237.89,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20%，14.0823 股 @ $715.17"
+    },
+    {
+      "trade_date": "2026-04-28",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 708.8847,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50159.0,
+      "qqq_total_assets": 52349.84,
+      "total_assets": 102508.84,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-04-29",
+      "spy_action": "无操作",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 708.8847,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50152.76,
+      "qqq_total_assets": 52669.89,
+      "total_assets": 102822.65,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金"
+    },
+    {
+      "trade_date": "2026-04-30",
+      "spy_action": "买入 13.6682 股 @ $718.66",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50554.03,
+      "qqq_total_assets": 53161.11,
+      "total_assets": 103715.14,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20%，13.6682 股 @ $718.66（现金不足，目标 $10,110.81 → 实际 $9,822.78）"
+    },
+    {
+      "trade_date": "2026-05-01",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50694.02,
+      "qqq_total_assets": 53671.43,
+      "total_assets": 104365.45,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
+    },
+    {
+      "trade_date": "2026-05-04",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50508.31,
+      "qqq_total_assets": 53570.32,
+      "total_assets": 104078.63,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-05-05",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 50913.49,
+      "qqq_total_assets": 54265.34,
+      "total_assets": 105178.84,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
+    },
+    {
+      "trade_date": "2026-05-06",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 51621.16,
+      "qqq_total_assets": 55392.67,
+      "total_assets": 107013.84,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
+    },
+    {
+      "trade_date": "2026-05-07",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 51462.89,
+      "qqq_total_assets": 55326.59,
+      "total_assets": 106789.48,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-05-08",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 51887.77,
+      "qqq_total_assets": 56623.5,
+      "total_assets": 108511.27,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
+    },
+    {
+      "trade_date": "2026-05-11",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 52005.95,
+      "qqq_total_assets": 56787.5,
+      "total_assets": 108793.45,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
+    },
+    {
+      "trade_date": "2026-05-12",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 51927.16,
+      "qqq_total_assets": 56305.84,
+      "total_assets": 108233.0,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-05-13",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 52217.69,
+      "qqq_total_assets": 56900.55,
+      "total_assets": 109118.24,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
+    },
+    {
+      "trade_date": "2026-05-14",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 52629.91,
+      "qqq_total_assets": 57304.99,
+      "total_assets": 109934.9,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
+    },
+    {
+      "trade_date": "2026-05-15",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 51996.8,
+      "qqq_total_assets": 56440.39,
+      "total_assets": 108437.19,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-05-18",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 51960.23,
+      "qqq_total_assets": 56197.56,
+      "total_assets": 108157.79,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-05-19",
+      "spy_action": "无操作",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 51614.13,
+      "qqq_total_assets": 55851.25,
+      "total_assets": 107465.37,
+      "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-05-20",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 52143.12,
+      "qqq_total_assets": 56776.35,
+      "total_assets": 108919.48,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
+    }
+  ],
+  "prices": {
+    "spy": [
+      {
+        "date": "2026-01-26",
+        "adjusted_close": 690.8433
+      },
+      {
+        "date": "2026-01-27",
+        "adjusted_close": 693.5958
+      },
+      {
+        "date": "2026-01-28",
+        "adjusted_close": 693.526
+      },
+      {
+        "date": "2026-01-29",
+        "adjusted_close": 692.1497
+      },
+      {
+        "date": "2026-01-30",
+        "adjusted_close": 690.0854
+      },
+      {
+        "date": "2026-02-02",
+        "adjusted_close": 693.516
+      },
+      {
+        "date": "2026-02-03",
+        "adjusted_close": 687.652
+      },
+      {
+        "date": "2026-02-04",
+        "adjusted_close": 684.3211
+      },
+      {
+        "date": "2026-02-05",
+        "adjusted_close": 675.7745
+      },
+      {
+        "date": "2026-02-06",
+        "adjusted_close": 688.7391
+      },
+      {
+        "date": "2026-02-09",
+        "adjusted_close": 692.06
+      },
+      {
+        "date": "2026-02-10",
+        "adjusted_close": 690.235
+      },
+      {
+        "date": "2026-02-11",
+        "adjusted_close": 690.0754
+      },
+      {
+        "date": "2026-02-12",
+        "adjusted_close": 679.4145
+      },
+      {
+        "date": "2026-02-13",
+        "adjusted_close": 679.8932
+      },
+      {
+        "date": "2026-02-17",
+        "adjusted_close": 680.9902
+      },
+      {
+        "date": "2026-02-18",
+        "adjusted_close": 684.4209
+      },
+      {
+        "date": "2026-02-19",
+        "adjusted_close": 682.6158
+      },
+      {
+        "date": "2026-02-20",
+        "adjusted_close": 687.5523
+      },
+      {
+        "date": "2026-02-23",
+        "adjusted_close": 680.5315
+      },
+      {
+        "date": "2026-02-24",
+        "adjusted_close": 685.478
+      },
+      {
+        "date": "2026-02-25",
+        "adjusted_close": 691.2622
+      },
+      {
+        "date": "2026-02-26",
+        "adjusted_close": 687.4227
+      },
+      {
+        "date": "2026-02-27",
+        "adjusted_close": 684.1217
+      },
+      {
+        "date": "2026-03-02",
+        "adjusted_close": 684.5106
+      },
+      {
+        "date": "2026-03-03",
+        "adjusted_close": 678.4771
+      },
+      {
+        "date": "2026-03-04",
+        "adjusted_close": 683.264
+      },
+      {
+        "date": "2026-03-05",
+        "adjusted_close": 679.4544
+      },
+      {
+        "date": "2026-03-06",
+        "adjusted_close": 670.5487
+      },
+      {
+        "date": "2026-03-09",
+        "adjusted_close": 676.4227
+      },
+      {
+        "date": "2026-03-10",
+        "adjusted_close": 675.3357
+      },
+      {
+        "date": "2026-03-11",
+        "adjusted_close": 674.488
+      },
+      {
+        "date": "2026-03-12",
+        "adjusted_close": 664.246
+      },
+      {
+        "date": "2026-03-13",
+        "adjusted_close": 660.4862
+      },
+      {
+        "date": "2026-03-16",
+        "adjusted_close": 667.2079
+      },
+      {
+        "date": "2026-03-17",
+        "adjusted_close": 668.9631
+      },
+      {
+        "date": "2026-03-18",
+        "adjusted_close": 659.6286
+      },
+      {
+        "date": "2026-03-19",
+        "adjusted_close": 658.003
+      },
+      {
+        "date": "2026-03-20",
+        "adjusted_close": 648.57
+      },
+      {
+        "date": "2026-03-23",
+        "adjusted_close": 655.38
+      },
+      {
+        "date": "2026-03-24",
+        "adjusted_close": 653.18
+      },
+      {
+        "date": "2026-03-25",
+        "adjusted_close": 656.82
+      },
+      {
+        "date": "2026-03-26",
+        "adjusted_close": 645.09
+      },
+      {
+        "date": "2026-03-27",
+        "adjusted_close": 634.09
+      },
+      {
+        "date": "2026-03-30",
+        "adjusted_close": 631.97
+      },
+      {
+        "date": "2026-03-31",
+        "adjusted_close": 650.34
+      },
+      {
+        "date": "2026-04-01",
+        "adjusted_close": 655.24
+      },
+      {
+        "date": "2026-04-02",
+        "adjusted_close": 655.83
+      },
+      {
+        "date": "2026-04-06",
+        "adjusted_close": 658.93
+      },
+      {
+        "date": "2026-04-07",
+        "adjusted_close": 659.22
+      },
+      {
+        "date": "2026-04-08",
+        "adjusted_close": 676.01
+      },
+      {
+        "date": "2026-04-09",
+        "adjusted_close": 679.91
+      },
+      {
+        "date": "2026-04-10",
+        "adjusted_close": 679.46
+      },
+      {
+        "date": "2026-04-13",
+        "adjusted_close": 686.1
+      },
+      {
+        "date": "2026-04-14",
+        "adjusted_close": 694.46
+      },
+      {
+        "date": "2026-04-15",
+        "adjusted_close": 699.94
+      },
+      {
+        "date": "2026-04-16",
+        "adjusted_close": 701.66
+      },
+      {
+        "date": "2026-04-17",
+        "adjusted_close": 710.14
+      },
+      {
+        "date": "2026-04-20",
+        "adjusted_close": 708.72
+      },
+      {
+        "date": "2026-04-21",
+        "adjusted_close": 704.08
+      },
+      {
+        "date": "2026-04-22",
+        "adjusted_close": 711.21
+      },
+      {
+        "date": "2026-04-23",
+        "adjusted_close": 708.45
+      },
+      {
+        "date": "2026-04-24",
+        "adjusted_close": 713.94
+      },
+      {
+        "date": "2026-04-27",
+        "adjusted_close": 715.17
+      },
+      {
+        "date": "2026-04-28",
+        "adjusted_close": 711.69
+      },
+      {
+        "date": "2026-04-29",
+        "adjusted_close": 711.58
+      },
+      {
+        "date": "2026-04-30",
+        "adjusted_close": 718.66
+      },
+      {
+        "date": "2026-05-01",
+        "adjusted_close": 720.65
+      },
+      {
+        "date": "2026-05-04",
+        "adjusted_close": 718.01
+      },
+      {
+        "date": "2026-05-05",
+        "adjusted_close": 723.77
+      },
+      {
+        "date": "2026-05-06",
+        "adjusted_close": 733.83
+      },
+      {
+        "date": "2026-05-07",
+        "adjusted_close": 731.58
+      },
+      {
+        "date": "2026-05-08",
+        "adjusted_close": 737.62
+      },
+      {
+        "date": "2026-05-11",
+        "adjusted_close": 739.3
+      },
+      {
+        "date": "2026-05-12",
+        "adjusted_close": 738.18
+      },
+      {
+        "date": "2026-05-13",
+        "adjusted_close": 742.31
+      },
+      {
+        "date": "2026-05-14",
+        "adjusted_close": 748.17
+      },
+      {
+        "date": "2026-05-15",
+        "adjusted_close": 739.17
+      },
+      {
+        "date": "2026-05-18",
+        "adjusted_close": 738.65
+      },
+      {
+        "date": "2026-05-19",
+        "adjusted_close": 733.73
+      },
+      {
+        "date": "2026-05-20",
+        "adjusted_close": 741.25
+      }
+    ],
+    "qqq": [
+      {
+        "date": "2026-01-26",
+        "adjusted_close": 624.6725
+      },
+      {
+        "date": "2026-01-27",
+        "adjusted_close": 630.3354
+      },
+      {
+        "date": "2026-01-28",
+        "adjusted_close": 632.4228
+      },
+      {
+        "date": "2026-01-29",
+        "adjusted_close": 628.6375
+      },
+      {
+        "date": "2026-01-30",
+        "adjusted_close": 621.0871
+      },
+      {
+        "date": "2026-02-02",
+        "adjusted_close": 625.3517
+      },
+      {
+        "date": "2026-02-03",
+        "adjusted_close": 615.7438
+      },
+      {
+        "date": "2026-02-04",
+        "adjusted_close": 604.9874
+      },
+      {
+        "date": "2026-02-05",
+        "adjusted_close": 596.2783
+      },
+      {
+        "date": "2026-02-06",
+        "adjusted_close": 608.8824
+      },
+      {
+        "date": "2026-02-09",
+        "adjusted_close": 613.5466
+      },
+      {
+        "date": "2026-02-10",
+        "adjusted_close": 610.7002
+      },
+      {
+        "date": "2026-02-11",
+        "adjusted_close": 612.3381
+      },
+      {
+        "date": "2026-02-12",
+        "adjusted_close": 599.8838
+      },
+      {
+        "date": "2026-02-13",
+        "adjusted_close": 601.1622
+      },
+      {
+        "date": "2026-02-17",
+        "adjusted_close": 600.543
+      },
+      {
+        "date": "2026-02-18",
+        "adjusted_close": 605.0273
+      },
+      {
+        "date": "2026-02-19",
+        "adjusted_close": 602.7102
+      },
+      {
+        "date": "2026-02-20",
+        "adjusted_close": 608.0435
+      },
+      {
+        "date": "2026-02-23",
+        "adjusted_close": 600.6528
+      },
+      {
+        "date": "2026-02-24",
+        "adjusted_close": 607.1047
+      },
+      {
+        "date": "2026-02-25",
+        "adjusted_close": 615.9036
+      },
+      {
+        "date": "2026-02-26",
+        "adjusted_close": 608.473
+      },
+      {
+        "date": "2026-02-27",
+        "adjusted_close": 606.5254
+      },
+      {
+        "date": "2026-03-02",
+        "adjusted_close": 607.3244
+      },
+      {
+        "date": "2026-03-03",
+        "adjusted_close": 600.8226
+      },
+      {
+        "date": "2026-03-04",
+        "adjusted_close": 609.9811
+      },
+      {
+        "date": "2026-03-05",
+        "adjusted_close": 608.1434
+      },
+      {
+        "date": "2026-03-06",
+        "adjusted_close": 598.9949
+      },
+      {
+        "date": "2026-03-09",
+        "adjusted_close": 606.9948
+      },
+      {
+        "date": "2026-03-10",
+        "adjusted_close": 607.0048
+      },
+      {
+        "date": "2026-03-11",
+        "adjusted_close": 606.9249
+      },
+      {
+        "date": "2026-03-12",
+        "adjusted_close": 596.508
+      },
+      {
+        "date": "2026-03-13",
+        "adjusted_close": 592.9725
+      },
+      {
+        "date": "2026-03-16",
+        "adjusted_close": 599.6241
+      },
+      {
+        "date": "2026-03-17",
+        "adjusted_close": 602.5504
+      },
+      {
+        "date": "2026-03-18",
+        "adjusted_close": 594.151
+      },
+      {
+        "date": "2026-03-19",
+        "adjusted_close": 592.2734
+      },
+      {
+        "date": "2026-03-20",
+        "adjusted_close": 581.3272
+      },
+      {
+        "date": "2026-03-23",
+        "adjusted_close": 588.0
+      },
+      {
+        "date": "2026-03-24",
+        "adjusted_close": 583.98
+      },
+      {
+        "date": "2026-03-25",
+        "adjusted_close": 587.82
+      },
+      {
+        "date": "2026-03-26",
+        "adjusted_close": 573.79
+      },
+      {
+        "date": "2026-03-27",
+        "adjusted_close": 562.58
+      },
+      {
+        "date": "2026-03-30",
+        "adjusted_close": 558.28
+      },
+      {
+        "date": "2026-03-31",
+        "adjusted_close": 577.18
+      },
+      {
+        "date": "2026-04-01",
+        "adjusted_close": 584.31
+      },
+      {
+        "date": "2026-04-02",
+        "adjusted_close": 584.98
+      },
+      {
+        "date": "2026-04-06",
+        "adjusted_close": 588.5
+      },
+      {
+        "date": "2026-04-07",
+        "adjusted_close": 588.59
+      },
+      {
+        "date": "2026-04-08",
+        "adjusted_close": 606.09
+      },
+      {
+        "date": "2026-04-09",
+        "adjusted_close": 610.19
+      },
+      {
+        "date": "2026-04-10",
+        "adjusted_close": 611.07
+      },
+      {
+        "date": "2026-04-13",
+        "adjusted_close": 617.39
+      },
+      {
+        "date": "2026-04-14",
+        "adjusted_close": 628.6
+      },
+      {
+        "date": "2026-04-15",
+        "adjusted_close": 637.4
+      },
+      {
+        "date": "2026-04-16",
+        "adjusted_close": 640.47
+      },
+      {
+        "date": "2026-04-17",
+        "adjusted_close": 648.85
+      },
+      {
+        "date": "2026-04-20",
+        "adjusted_close": 646.79
+      },
+      {
+        "date": "2026-04-21",
+        "adjusted_close": 644.33
+      },
+      {
+        "date": "2026-04-22",
+        "adjusted_close": 655.11
+      },
+      {
+        "date": "2026-04-23",
+        "adjusted_close": 651.42
+      },
+      {
+        "date": "2026-04-24",
+        "adjusted_close": 663.88
+      },
+      {
+        "date": "2026-04-27",
+        "adjusted_close": 664.23
+      },
+      {
+        "date": "2026-04-28",
+        "adjusted_close": 657.55
+      },
+      {
+        "date": "2026-04-29",
+        "adjusted_close": 661.57
+      },
+      {
+        "date": "2026-04-30",
+        "adjusted_close": 667.74
+      },
+      {
+        "date": "2026-05-01",
+        "adjusted_close": 674.15
+      },
+      {
+        "date": "2026-05-04",
+        "adjusted_close": 672.88
+      },
+      {
+        "date": "2026-05-05",
+        "adjusted_close": 681.61
+      },
+      {
+        "date": "2026-05-06",
+        "adjusted_close": 695.77
+      },
+      {
+        "date": "2026-05-07",
+        "adjusted_close": 694.94
+      },
+      {
+        "date": "2026-05-08",
+        "adjusted_close": 711.23
+      },
+      {
+        "date": "2026-05-11",
+        "adjusted_close": 713.29
+      },
+      {
+        "date": "2026-05-12",
+        "adjusted_close": 707.24
+      },
+      {
+        "date": "2026-05-13",
+        "adjusted_close": 714.71
+      },
+      {
+        "date": "2026-05-14",
+        "adjusted_close": 719.79
+      },
+      {
+        "date": "2026-05-15",
+        "adjusted_close": 708.93
+      },
+      {
+        "date": "2026-05-18",
+        "adjusted_close": 705.88
+      },
+      {
+        "date": "2026-05-19",
+        "adjusted_close": 701.53
+      },
+      {
+        "date": "2026-05-20",
+        "adjusted_close": 713.15
+      }
+    ]
+  }
+};
 
+/* ==================== 策略切换 ==================== */
+let itPlotted = false;
+function showView(name) {
+  document.getElementById('view-hot').style.display = (name === 'hot') ? '' : 'none';
+  document.getElementById('view-index').style.display = (name === 'index') ? '' : 'none';
+  if (name === 'index' && !itPlotted) {
+    renderIndexChart();
+    itPlotted = true;
+  }
+}
+document.getElementById('strategy-select').addEventListener('change', function (e) {
+  showView(e.target.value);
+});
+
+/* ==================== HotTrading 视图初始化 (原逻辑不变) ==================== */
 document.getElementById('m-strategy').textContent = DATA.strategy;
 document.getElementById('m-signal').textContent = DATA.signal_date;
 document.getElementById('m-price').textContent = DATA.price_date;
@@ -238,12 +1846,10 @@ function fmtMoney(v) {
   if (v === null || v === undefined || isNaN(v)) return '—';
   return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
 function fmtShares(v) {
   if (v === null || v === undefined || isNaN(v)) return '—';
   return v.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
-
 function fmtSig(v, isPercent) {
   if (v === null || v === undefined || isNaN(v)) return '—';
   if (isPercent) return (v * 100).toFixed(2) + '%';
@@ -253,7 +1859,6 @@ function fmtSig(v, isPercent) {
 function recalc() {
   const cap = parseFloat(document.getElementById('capital').value) || 0;
   const n = DATA.n_holdings;
-  // 实际部署 = 总金额 × gate 仓位 / 持仓数; 剩余 (1-gate) 持现金
   const perStock = n > 0 ? cap * GATE_POS / n : 0;
   const activeSignal = DATA.holdings.length > 0 ? DATA.holdings[0].signal_used : 'asym120';
 
@@ -264,9 +1869,7 @@ function recalc() {
   DATA.holdings.forEach(h => {
     const price = h.price;
     let shares = 0;
-    if (price && price > 0) {
-      shares = perStock / price;
-    }
+    if (price && price > 0) shares = perStock / price;
     totalShares += shares;
 
     const asymClass = activeSignal === 'asym120' ? 'signal-active' : 'signal-muted';
@@ -285,7 +1888,7 @@ function recalc() {
     tbody.appendChild(tr);
   });
 
-  const deployed = perStock * n;          // = cap × gate 仓位
+  const deployed = perStock * n;
   const cash = cap - deployed;
   document.getElementById('deploy-line').innerHTML =
     '→ gate 仓位 <b>' + (GATE_POS * 100).toFixed(0) + '%</b>：实际买入 <b>$'
@@ -295,9 +1898,132 @@ function recalc() {
     fmtMoney(deployed) + (GATE_POS < 1 ? '  (现金 ' + fmtMoney(cash) + ')' : '');
   document.getElementById('s-shares').textContent = '—';
 }
-
 document.getElementById('capital').addEventListener('input', recalc);
 recalc();
+
+/* ==================== IndexTrading 视图 ==================== */
+document.getElementById('it-gen').textContent = DATA_INDEX.generated_at || '';
+
+function actionType(s) {
+  if (!s) return null;
+  if (s.startsWith('买入') || s.startsWith('跳过买入')) return 'buy';
+  if (s.startsWith('卖出') || s.startsWith('跳过卖出')) return 'sell';
+  return null;
+}
+
+function renderIndexChart() {
+  const sym = document.getElementById('symbol-select').value;
+  drawIndexChart(sym);
+}
+
+function drawIndexChart(sym) {
+  const rows = DATA_INDEX.rows;
+  const prices = DATA_INDEX.prices[sym];
+  const actionKey = sym + '_action';
+  const assetsKey = sym + '_total_assets';
+
+  // 策略总资产曲线 (左轴, 虚线)
+  const assetsX = rows.map(r => r.trade_date);
+  const assetsY = rows.map(r => r[assetsKey]);
+
+  // 标的复权价 (右轴, 实线)
+  const priceX = prices.map(p => p.date);
+  const priceY = prices.map(p => p.adjusted_close);
+
+  // 价格按日期建索引 — 信号点 y 值从这里 lookup (画在复权价线上)
+  const priceByDate = {};
+  prices.forEach(p => { priceByDate[p.date] = p.adjusted_close; });
+
+  // 信号点 (画在标的复权价线上, 右轴)
+  const buyX = [], buyY = [], buyIdx = [];
+  const sellX = [], sellY = [], sellIdx = [];
+  rows.forEach((r, i) => {
+    const t = actionType(r[actionKey]);
+    const py = priceByDate[r.trade_date];
+    if (py === undefined) return;  // 信号日没价格 (非交易日?) 不画
+    if (t === 'buy')  { buyX.push(r.trade_date); buyY.push(py); buyIdx.push(i); }
+    if (t === 'sell') { sellX.push(r.trade_date); sellY.push(py); sellIdx.push(i); }
+  });
+
+  const traces = [
+    {
+      x: assetsX, y: assetsY, name: '策略总资产 ($)',
+      mode: 'lines', line: { color: '#1f77b4', width: 1.6, dash: 'dash' },
+      yaxis: 'y1',
+      hovertemplate: '%{x}<br>策略资产: $%{y:,.2f}<extra></extra>',
+    },
+    {
+      x: priceX, y: priceY, name: sym.toUpperCase() + ' 复权价 ($)',
+      mode: 'lines', line: { color: '#374151', width: 1.6 },
+      yaxis: 'y2',
+      hovertemplate: '%{x}<br>' + sym.toUpperCase() + ': $%{y:.2f}<extra></extra>',
+    },
+    {
+      x: buyX, y: buyY, name: '买入信号', mode: 'markers',
+      marker: { color: '#d62728', size: 11, symbol: 'circle', line: { color: 'white', width: 1 } },
+      yaxis: 'y2', customdata: buyIdx,
+      hovertemplate: '%{x}<br><b>买入信号</b><br>' + sym.toUpperCase() + ': $%{y:.2f}<br><i>点击查看明细</i><extra></extra>',
+    },
+    {
+      x: sellX, y: sellY, name: '卖出信号', mode: 'markers',
+      marker: { color: '#2ca02c', size: 11, symbol: 'circle', line: { color: 'white', width: 1 } },
+      yaxis: 'y2', customdata: sellIdx,
+      hovertemplate: '%{x}<br><b>卖出信号</b><br>' + sym.toUpperCase() + ': $%{y:.2f}<br><i>点击查看明细</i><extra></extra>',
+    },
+  ];
+
+  const layout = {
+    margin: { l: 70, r: 70, t: 30, b: 40 },
+    hovermode: 'closest',
+    legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, xanchor: 'left', x: 0 },
+    xaxis: { showgrid: true, gridcolor: '#eee' },
+    yaxis: { title: '策略总资产 ($)', side: 'left', showgrid: true, gridcolor: '#eee',
+             tickformat: ',.0f' },
+    yaxis2: { title: sym.toUpperCase() + ' 复权价 ($)', side: 'right', overlaying: 'y',
+              showgrid: false, tickformat: '.2f' },
+    plot_bgcolor: 'white',
+  };
+
+  Plotly.newPlot('it-chart', traces, layout,
+                 { displayModeBar: false, responsive: true });
+
+  // 重新绑定点击事件 (newPlot 后绑)
+  document.getElementById('it-chart').on('plotly_click', function (ev) {
+    const pt = ev.points[0];
+    if (pt.customdata === undefined || pt.customdata === null) return;
+    showIndexDetail(pt.customdata);
+  });
+}
+
+function showIndexDetail(idx) {
+  const sym = document.getElementById('symbol-select').value;
+  const r = DATA_INDEX.rows[idx];
+  const action = r[sym + '_action'];
+  const avgCost = r[sym + '_avg_cost'];
+  const assets = r[sym + '_total_assets'];
+  const t = actionType(action);
+
+  let badge = '';
+  if (t === 'buy')  badge = '<span class="it-badge it-badge-buy">买入</span>';
+  if (t === 'sell') badge = '<span class="it-badge it-badge-sell">卖出</span>';
+
+  const html = `
+    <div class="header">${r.trade_date}　${sym.toUpperCase()}　${badge}</div>
+    <div class="it-kv"><span class="k">action:</span><span class="v">${action || '—'}</span></div>
+    <div class="it-kv"><span class="k">avg_cost:</span><span class="v">${avgCost != null ? '$' + Number(avgCost).toFixed(4) : '—'}</span></div>
+    <div class="it-kv"><span class="k">${sym}_total_assets:</span><span class="v">${assets != null ? '$' + Number(assets).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</span></div>
+    <div class="it-kv"><span class="k">total_assets:</span><span class="v">${r.total_assets != null ? '$' + Number(r.total_assets).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</span></div>
+    <div style="color:#666;margin-top:10px;margin-bottom:4px">explanation:</div>
+    <div class="it-explanation">${(r.explanation || '—').replace(/</g,'&lt;')}</div>
+  `;
+  document.getElementById('it-detail').innerHTML = html;
+}
+
+document.getElementById('symbol-select').addEventListener('change', function () {
+  drawIndexChart(this.value);
+  document.getElementById('it-detail').innerHTML =
+    '<div class="placeholder">点击图中的红 / 绿点查看当日明细 →</div>';
+});
 </script>
 
 </body>
