@@ -117,6 +117,7 @@
       <th>最新价 ($)</th>
       <th>分配金额 ($)</th>
       <th>买入股数</th>
+      <th>真实成本 ($)</th>
     </tr>
   </thead>
   <tbody id="tbody"></tbody>
@@ -125,6 +126,7 @@
       <td colspan="5" style="text-align:right">合计</td>
       <td id="s-alloc">—</td>
       <td id="s-shares">—</td>
+      <td id="s-realcost">—</td>
     </tr>
   </tfoot>
 </table>
@@ -183,7 +185,7 @@ const DATA = {
   "period_start": "2026-05-26",
   "period_end": "2026-05-29",
   "price_date": "2026-05-26",
-  "generated_at": "2026-05-27 08:03:53",
+  "generated_at": "2026-05-27 17:19:31",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 4.44,
@@ -286,7 +288,7 @@ const DATA = {
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-05-27 08:03:53",
+  "generated_at": "2026-05-27 17:19:31",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -1922,12 +1924,18 @@ function recalc() {
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
   let totalShares = 0;
+  let totalRealCost = 0;
 
   DATA.holdings.forEach(h => {
     const price = h.price;
     let shares = 0;
     if (price && price > 0) shares = perStock / price;
     totalShares += shares;
+
+    // 真实成本 = 页面显示的 1 位小数股数 × 价格 (按下单实际可买的近似)
+    const displayShares = (price && price > 0) ? Math.round(shares * 10) / 10 : 0;
+    const realCost = displayShares * (price || 0);
+    totalRealCost += realCost;
 
     const asymClass = activeSignal === 'asym120' ? 'signal-active' : 'signal-muted';
     const a20Class = activeSignal === 'a20' ? 'signal-active' : 'signal-muted';
@@ -1940,7 +1948,8 @@ function recalc() {
       <td class="${a20Class}">${fmtSig(h.a20, true)}</td>
       <td>${price ? fmtMoney(price) : '—'}</td>
       <td>${fmtMoney(perStock)}</td>
-      <td><b>${fmtShares(shares)}</b></td>
+      <td><b>${fmtShares(displayShares)}</b></td>
+      <td>${price ? fmtMoney(realCost) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1954,6 +1963,10 @@ function recalc() {
   document.getElementById('s-alloc').textContent =
     fmtMoney(deployed) + (GATE_POS < 1 ? '  (现金 ' + fmtMoney(cash) + ')' : '');
   document.getElementById('s-shares').textContent = '—';
+  const diff = totalRealCost - deployed;
+  const diffStr = (diff >= 0 ? '+' : '−') + fmtMoney(Math.abs(diff));
+  document.getElementById('s-realcost').textContent =
+    fmtMoney(totalRealCost) + '  (vs 分配 ' + diffStr + ')';
 }
 document.getElementById('capital').addEventListener('input', recalc);
 recalc();
