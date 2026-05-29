@@ -181,15 +181,15 @@
 <script>
 const DATA = {
   "strategy": "R4 (regime-conditional Asym120 + A20) + timing gate",
-  "signal_date": "2026-05-22",
-  "period_start": "2026-05-26",
-  "period_end": "2026-05-29",
-  "price_date": "2026-05-28",
-  "generated_at": "2026-05-29 07:31:15",
+  "signal_date": "2026-05-29",
+  "period_start": "2026-06-01",
+  "period_end": "2026-06-05",
+  "price_date": "2026-05-29",
+  "generated_at": "2026-05-30 07:24:30",
   "regime": "asym",
   "signal_used": "Asym120",
-  "spy_20d_ret_pct": 4.44,
-  "spy_20d_vol_pct": 10.3,
+  "spy_20d_ret_pct": 5.26,
+  "spy_20d_vol_pct": 9.76,
   "spy_vol_threshold": 18.0,
   "n_holdings": 10,
   "gate_pos": 1.0,
@@ -198,97 +198,97 @@ const DATA = {
     {
       "ticker": "MU",
       "name": "Micron Technology",
-      "asym120": 0.7356,
-      "a20": 0.2915,
+      "asym120": 0.6617,
+      "a20": 0.4847,
       "signal_used": "asym120",
-      "price": 923.52,
-      "price_date": "2026-05-28"
+      "price": 971.0,
+      "price_date": "2026-05-29"
+    },
+    {
+      "ticker": "NVDA",
+      "name": "Nvidia",
+      "asym120": 0.9023,
+      "a20": 0.065,
+      "signal_used": "asym120",
+      "price": 211.14,
+      "price_date": "2026-05-29"
     },
     {
       "ticker": "TSLA",
       "name": "Tesla, Inc.",
-      "asym120": 0.8931,
-      "a20": -0.0168,
+      "asym120": 0.8865,
+      "a20": 0.0268,
       "signal_used": "asym120",
-      "price": 442.1,
-      "price_date": "2026-05-28"
+      "price": 435.79,
+      "price_date": "2026-05-29"
     },
     {
       "ticker": "SNDK",
       "name": "Sandisk",
-      "asym120": 0.7183,
-      "a20": 0.0983,
+      "asym120": 0.7432,
+      "a20": 0.1009,
       "signal_used": "asym120",
-      "price": 1641.64,
-      "price_date": "2026-05-28"
+      "price": 1694.98,
+      "price_date": "2026-05-29"
     },
     {
       "ticker": "AMD",
       "name": "Advanced Micro Devices",
-      "asym120": 0.7801,
-      "a20": 0.1552,
+      "asym120": 0.7763,
+      "a20": 0.2865,
       "signal_used": "asym120",
-      "price": 518.09,
-      "price_date": "2026-05-28"
+      "price": 516.1,
+      "price_date": "2026-05-29"
     },
     {
       "ticker": "INTC",
       "name": "Intel",
-      "asym120": 0.6563,
-      "a20": 0.0634,
+      "asym120": 0.6448,
+      "a20": 0.1183,
       "signal_used": "asym120",
-      "price": 120.89,
-      "price_date": "2026-05-28"
-    },
-    {
-      "ticker": "AMZN",
-      "name": "Amazon",
-      "asym120": 0.9151,
-      "a20": -0.0227,
-      "signal_used": "asym120",
-      "price": 274.0,
-      "price_date": "2026-05-28"
+      "price": 114.68,
+      "price_date": "2026-05-29"
     },
     {
       "ticker": "GOOGL",
       "name": "Alphabet Inc. (Class A)",
-      "asym120": 0.5998,
-      "a20": 0.0134,
+      "asym120": 0.6145,
+      "a20": -0.0609,
       "signal_used": "asym120",
-      "price": 390.13,
-      "price_date": "2026-05-28"
+      "price": 380.34,
+      "price_date": "2026-05-29"
     },
     {
       "ticker": "META",
       "name": "Meta Platforms",
-      "asym120": 0.8488,
-      "a20": -0.1352,
+      "asym120": 0.8565,
+      "a20": -0.0523,
       "signal_used": "asym120",
-      "price": 635.29,
-      "price_date": "2026-05-28"
+      "price": 632.51,
+      "price_date": "2026-05-29"
     },
     {
       "ticker": "GOOG",
       "name": "Alphabet Inc. (Class C)",
-      "asym120": 0.5663,
-      "a20": 0.0096,
+      "asym120": 0.5827,
+      "a20": -0.0645,
       "signal_used": "asym120",
-      "price": 386.12,
-      "price_date": "2026-05-28"
+      "price": 376.43,
+      "price_date": "2026-05-29"
     },
     {
       "ticker": "QCOM",
       "name": "Qualcomm",
-      "asym120": 0.6586,
-      "a20": 0.2791,
+      "asym120": 0.6778,
+      "a20": 0.1746,
       "signal_used": "asym120",
-      "price": 243.29,
-      "price_date": "2026-05-28"
+      "price": 251.02,
+      "price_date": "2026-05-29"
     }
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-05-29 07:31:15",
+  "generated_at": "2026-05-30 07:24:30",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -1203,6 +1203,17 @@ const DATA_INDEX = {
       "qqq_total_assets": 58563.68,
       "total_assets": 111645.9,
       "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
+    },
+    {
+      "trade_date": "2026-05-29",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "跳过买入（无现金）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 53214.47,
+      "qqq_total_assets": 58779.43,
+      "total_assets": 111993.9,
+      "explanation": "QQQ trend 买入 20% 触发，但无可用现金；SPY trend 买入 20% 触发，但无可用现金"
     }
   ],
   "prices": {
@@ -1550,6 +1561,10 @@ const DATA_INDEX = {
       {
         "date": "2026-05-28",
         "adjusted_close": 754.6
+      },
+      {
+        "date": "2026-05-29",
+        "adjusted_close": 756.48
       }
     ],
     "qqq": [
@@ -1896,6 +1911,10 @@ const DATA_INDEX = {
       {
         "date": "2026-05-28",
         "adjusted_close": 735.6
+      },
+      {
+        "date": "2026-05-29",
+        "adjusted_close": 738.31
       }
     ]
   }
