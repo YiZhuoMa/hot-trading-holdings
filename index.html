@@ -184,8 +184,8 @@ const DATA = {
   "signal_date": "2026-05-29",
   "period_start": "2026-06-01",
   "period_end": "2026-06-05",
-  "price_date": "2026-06-03",
-  "generated_at": "2026-06-04 07:32:33",
+  "price_date": "2026-06-04",
+  "generated_at": "2026-06-05 07:32:44",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 5.26,
@@ -201,8 +201,8 @@ const DATA = {
       "asym120": 0.6617,
       "a20": 0.4847,
       "signal_used": "asym120",
-      "price": 1079.5699,
-      "price_date": "2026-06-03"
+      "price": 996.0,
+      "price_date": "2026-06-04"
     },
     {
       "ticker": "NVDA",
@@ -210,8 +210,8 @@ const DATA = {
       "asym120": 0.9023,
       "a20": 0.065,
       "signal_used": "asym120",
-      "price": 214.75,
-      "price_date": "2026-06-03"
+      "price": 218.66,
+      "price_date": "2026-06-04"
     },
     {
       "ticker": "TSLA",
@@ -219,8 +219,8 @@ const DATA = {
       "asym120": 0.8865,
       "a20": 0.0268,
       "signal_used": "asym120",
-      "price": 423.7,
-      "price_date": "2026-06-03"
+      "price": 418.45,
+      "price_date": "2026-06-04"
     },
     {
       "ticker": "SNDK",
@@ -228,8 +228,8 @@ const DATA = {
       "asym120": 0.7432,
       "a20": 0.1009,
       "signal_used": "asym120",
-      "price": 1831.5,
-      "price_date": "2026-06-03"
+      "price": 1759.6801,
+      "price_date": "2026-06-04"
     },
     {
       "ticker": "AMD",
@@ -237,8 +237,8 @@ const DATA = {
       "asym120": 0.7763,
       "a20": 0.2865,
       "signal_used": "asym120",
-      "price": 542.52,
-      "price_date": "2026-06-03"
+      "price": 523.2,
+      "price_date": "2026-06-04"
     },
     {
       "ticker": "INTC",
@@ -246,8 +246,8 @@ const DATA = {
       "asym120": 0.6448,
       "a20": 0.1183,
       "signal_used": "asym120",
-      "price": 112.71,
-      "price_date": "2026-06-03"
+      "price": 111.78,
+      "price_date": "2026-06-04"
     },
     {
       "ticker": "GOOGL",
@@ -255,8 +255,8 @@ const DATA = {
       "asym120": 0.6145,
       "a20": -0.0609,
       "signal_used": "asym120",
-      "price": 358.99,
-      "price_date": "2026-06-03"
+      "price": 372.19,
+      "price_date": "2026-06-04"
     },
     {
       "ticker": "META",
@@ -264,8 +264,8 @@ const DATA = {
       "asym120": 0.8565,
       "a20": -0.0523,
       "signal_used": "asym120",
-      "price": 622.98,
-      "price_date": "2026-06-03"
+      "price": 627.57,
+      "price_date": "2026-06-04"
     },
     {
       "ticker": "GOOG",
@@ -273,8 +273,8 @@ const DATA = {
       "asym120": 0.5827,
       "a20": -0.0645,
       "signal_used": "asym120",
-      "price": 355.68,
-      "price_date": "2026-06-03"
+      "price": 369.27,
+      "price_date": "2026-06-04"
     },
     {
       "ticker": "QCOM",
@@ -282,13 +282,13 @@ const DATA = {
       "asym120": 0.6778,
       "a20": 0.1746,
       "signal_used": "asym120",
-      "price": 250.01,
-      "price_date": "2026-06-03"
+      "price": 242.57,
+      "price_date": "2026-06-04"
     }
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-06-04 07:32:33",
+  "generated_at": "2026-06-05 07:32:44",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -1247,6 +1247,17 @@ const DATA_INDEX = {
       "qqq_total_assets": 59249.15,
       "total_assets": 112306.05,
       "explanation": "无信号触发"
+    },
+    {
+      "trade_date": "2026-06-04",
+      "spy_action": "跳过买入（无现金）",
+      "qqq_action": "无操作",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 53257.38,
+      "qqq_total_assets": 58962.54,
+      "total_assets": 112219.93,
+      "explanation": "SPY trend 买入 20% 触发，但无可用现金"
     }
   ],
   "prices": {
@@ -1610,6 +1621,10 @@ const DATA_INDEX = {
       {
         "date": "2026-06-03",
         "adjusted_close": 754.24
+      },
+      {
+        "date": "2026-06-04",
+        "adjusted_close": 757.09
       }
     ],
     "qqq": [
@@ -1972,6 +1987,10 @@ const DATA_INDEX = {
       {
         "date": "2026-06-03",
         "adjusted_close": 744.21
+      },
+      {
+        "date": "2026-06-04",
+        "adjusted_close": 740.61
       }
     ]
   }
