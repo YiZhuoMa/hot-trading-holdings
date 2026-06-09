@@ -65,6 +65,7 @@
   <label for="strategy-select">策略：</label>
   <select id="strategy-select">
     <option value="hot">HotTrading</option>
+    <option value="lowvol">LowVolatility</option>
     <option value="index">IndexTrading</option>
   </select>
 </div>
@@ -178,6 +179,67 @@
 </div>
 <!-- /view-index -->
 
+<!-- ==================== LowVolatility 视图 ==================== -->
+<div id="view-lowvol" style="display:none">
+
+<h1>LowVolatility · 持仓计划</h1>
+<div class="meta">
+  调仓日：<code id="lv-rebal"></code> &nbsp;|&nbsp;
+  价格日：<code id="lv-price"></code> &nbsp;|&nbsp;
+  生成时间：<code id="lv-gen"></code>
+</div>
+<div class="meta" style="font-size:96%;color:#1f2937">
+  <b>持仓作用期：</b><code id="lv-period"></code> &nbsp;（月初调仓 → 持有至月末）
+</div>
+
+<div class="input-box" id="lv-ratio-box">
+  <label for="lv-ratio">配比 r（smooth 占比）&nbsp;=&nbsp; r×smooth + (1−r)×vt18</label>
+  <input type="number" id="lv-ratio" value="0.35" step="0.05" min="0" max="1">
+  <span class="hint"><b>r=1</b> 纯 smooth 单腿 · <b>r=0</b> 纯 vt18 单腿 · 0.25–0.5 推荐 blend（默认 0.35）。改后表格即时重算</span>
+</div>
+
+<div id="lv-expo-box" class="regime-box" style="background:#e0f2fe;border-color:#0284c7">
+  <span class="label" style="color:#075985">仓位 exposure:</span>
+  <code id="lv-expo"></code> &nbsp;·&nbsp; 持仓 <code id="lv-inv"></code> / 现金 <code id="lv-cash"></code>
+</div>
+
+<div class="input-box">
+  <label for="lv-capital">本次投入总金额 ($)</label>
+  <input type="number" id="lv-capital" value="100000" step="1000" min="0">
+  <span class="hint">输入后表格自动重算（小数股，股数保留 1 位小数）</span>
+</div>
+
+<div id="lv-deploy-line" class="meta" style="font-size:97%;margin:-10px 0 18px;color:#1f2937"></div>
+
+<div id="lv-explain" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px 14px;margin:0 0 18px;font-size:93%;line-height:1.65;color:#14532d"></div>
+
+<table id="lv-tbl">
+  <thead>
+    <tr>
+      <th>Ticker</th><th>公司名</th><th>量排名</th><th>目标权重</th>
+      <th>最新价 ($)</th><th>分配金额 ($)</th><th>买入股数</th><th>真实成本 ($)</th>
+    </tr>
+  </thead>
+  <tbody id="lv-tbody"></tbody>
+  <tfoot>
+    <tr class="summary">
+      <td colspan="5" style="text-align:right">合计</td>
+      <td id="lv-s-alloc">—</td><td id="lv-s-shares">—</td><td id="lv-s-realcost">—</td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="footnote">
+  · <b>LowVolatility</b>：SP500 前 50 成交量池内，按 ln(价格) 对时间回归的 斜率×R²（平稳上涨）选股，月度调仓。<br>
+  · <b>smooth 定稿</b>：取前 15 等权 + mixed_async_dd 深熊门（SPY 连破 200 日均线 8-9 周且回撤 ≥12% 才减仓，策略自身动能回升即回补）。<br>
+  · <b>vt18</b>：取前 20 等权 + MA200 regime + 18% 年化波动目标（波动高则降低仓位）。<br>
+  · <b>blend</b> = blend_ratio×smooth + (1-blend_ratio)×vt18（默认 0.35）。买入股数 = floor(目标权重 × 总金额 ÷ 最新价)；剩余持现金。<br>
+  · 按<b>小数股</b>（股数保留 1 位小数 = 0.1 股精度，多数美股券商支持）：实际投入 ≈ 目标投入，仅极小的 0.1 股取整差。
+</div>
+
+</div>
+<!-- /view-lowvol -->
+
 <script>
 const DATA = {
   "strategy": "R4 (regime-conditional Asym120 + A20) + timing gate",
@@ -185,7 +247,7 @@ const DATA = {
   "period_start": "2026-06-08",
   "period_end": "2026-06-12",
   "price_date": "2026-06-08",
-  "generated_at": "2026-06-09 07:42:31",
+  "generated_at": "2026-06-09 19:45:11",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 0.82,
@@ -288,7 +350,7 @@ const DATA = {
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-06-09 07:42:31",
+  "generated_at": "2026-06-09 19:45:11",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -2033,12 +2095,427 @@ const DATA_INDEX = {
     ]
   }
 };
+const DATA_LOWVOL = {
+  "rebalance_date": "2026-05-29",
+  "period_start": "2026-06-01",
+  "period_end": "2026-06-30",
+  "price_date": "2026-06-08",
+  "generated_at": "2026-06-09 16:19:12",
+  "blend_ratio": 0.35,
+  "default_capital": 100000.0,
+  "strategies": {
+    "blend": {
+      "exposure": 0.6943,
+      "cash_pct": 30.57,
+      "holdings": [
+        {
+          "ticker": "AMD",
+          "name": "Advanced Micro Devices",
+          "rank_ma": 5,
+          "weight": 0.040548,
+          "price": 490.33
+        },
+        {
+          "ticker": "LITE",
+          "name": "Lumentum",
+          "rank_ma": 16,
+          "weight": 0.040548,
+          "price": 895.4
+        },
+        {
+          "ticker": "WDC",
+          "name": "Western Digital",
+          "rank_ma": 18,
+          "weight": 0.040548,
+          "price": 526.93
+        },
+        {
+          "ticker": "VRT",
+          "name": "Vertiv",
+          "rank_ma": 46,
+          "weight": 0.040548,
+          "price": 300.57
+        },
+        {
+          "ticker": "TXN",
+          "name": "Texas Instruments",
+          "rank_ma": 36,
+          "weight": 0.040548,
+          "price": 290.9
+        },
+        {
+          "ticker": "STX",
+          "name": "Seagate Technology",
+          "rank_ma": 19,
+          "weight": 0.040548,
+          "price": 876.77
+        },
+        {
+          "ticker": "AVGO",
+          "name": "Broadcom",
+          "rank_ma": 12,
+          "weight": 0.040548,
+          "price": 396.6
+        },
+        {
+          "ticker": "MU",
+          "name": "Micron Technology",
+          "rank_ma": 1,
+          "weight": 0.040548,
+          "price": 949.28
+        },
+        {
+          "ticker": "SNDK",
+          "name": "Sandisk",
+          "rank_ma": 4,
+          "weight": 0.040548,
+          "price": 1642.0
+        },
+        {
+          "ticker": "INTC",
+          "name": "Intel",
+          "rank_ma": 6,
+          "weight": 0.040548,
+          "price": 110.27
+        },
+        {
+          "ticker": "GLW",
+          "name": "Corning Inc.",
+          "rank_ma": 28,
+          "weight": 0.040548,
+          "price": 187.54
+        },
+        {
+          "ticker": "GEV",
+          "name": "GE Vernova",
+          "rank_ma": 35,
+          "weight": 0.040548,
+          "price": 933.85
+        },
+        {
+          "ticker": "DELL",
+          "name": "Dell Technologies",
+          "rank_ma": 29,
+          "weight": 0.040548,
+          "price": 400.77
+        },
+        {
+          "ticker": "CSCO",
+          "name": "Cisco",
+          "rank_ma": 21,
+          "weight": 0.040548,
+          "price": 124.15
+        },
+        {
+          "ticker": "COHR",
+          "name": "Coherent Corp.",
+          "rank_ma": 37,
+          "weight": 0.040548,
+          "price": 401.93
+        },
+        {
+          "ticker": "AMAT",
+          "name": "Applied Materials",
+          "rank_ma": 20,
+          "weight": 0.017215,
+          "price": 492.17
+        },
+        {
+          "ticker": "CAT",
+          "name": "Caterpillar Inc.",
+          "rank_ma": 34,
+          "weight": 0.017215,
+          "price": 915.64
+        },
+        {
+          "ticker": "KLAC",
+          "name": "KLA Corporation",
+          "rank_ma": 48,
+          "weight": 0.017215,
+          "price": 2108.0601
+        },
+        {
+          "ticker": "LRCX",
+          "name": "Lam Research",
+          "rank_ma": 27,
+          "weight": 0.017215,
+          "price": 324.45
+        },
+        {
+          "ticker": "UNH",
+          "name": "UnitedHealth Group",
+          "rank_ma": 30,
+          "weight": 0.017215,
+          "price": 406.57
+        }
+      ]
+    },
+    "smooth": {
+      "exposure": 1.0,
+      "cash_pct": 0.0,
+      "holdings": [
+        {
+          "ticker": "SNDK",
+          "name": "Sandisk",
+          "rank_ma": 4,
+          "weight": 0.066667,
+          "price": 1642.0
+        },
+        {
+          "ticker": "INTC",
+          "name": "Intel",
+          "rank_ma": 6,
+          "weight": 0.066667,
+          "price": 110.27
+        },
+        {
+          "ticker": "DELL",
+          "name": "Dell Technologies",
+          "rank_ma": 29,
+          "weight": 0.066667,
+          "price": 400.77
+        },
+        {
+          "ticker": "LITE",
+          "name": "Lumentum",
+          "rank_ma": 16,
+          "weight": 0.066667,
+          "price": 895.4
+        },
+        {
+          "ticker": "STX",
+          "name": "Seagate Technology",
+          "rank_ma": 19,
+          "weight": 0.066667,
+          "price": 876.77
+        },
+        {
+          "ticker": "WDC",
+          "name": "Western Digital",
+          "rank_ma": 18,
+          "weight": 0.066667,
+          "price": 526.93
+        },
+        {
+          "ticker": "AMD",
+          "name": "Advanced Micro Devices",
+          "rank_ma": 5,
+          "weight": 0.066667,
+          "price": 490.33
+        },
+        {
+          "ticker": "COHR",
+          "name": "Coherent Corp.",
+          "rank_ma": 37,
+          "weight": 0.066667,
+          "price": 401.93
+        },
+        {
+          "ticker": "VRT",
+          "name": "Vertiv",
+          "rank_ma": 46,
+          "weight": 0.066667,
+          "price": 300.57
+        },
+        {
+          "ticker": "MU",
+          "name": "Micron Technology",
+          "rank_ma": 1,
+          "weight": 0.066667,
+          "price": 949.28
+        },
+        {
+          "ticker": "GLW",
+          "name": "Corning Inc.",
+          "rank_ma": 28,
+          "weight": 0.066667,
+          "price": 187.54
+        },
+        {
+          "ticker": "GEV",
+          "name": "GE Vernova",
+          "rank_ma": 35,
+          "weight": 0.066667,
+          "price": 933.85
+        },
+        {
+          "ticker": "TXN",
+          "name": "Texas Instruments",
+          "rank_ma": 36,
+          "weight": 0.066667,
+          "price": 290.9
+        },
+        {
+          "ticker": "CSCO",
+          "name": "Cisco",
+          "rank_ma": 21,
+          "weight": 0.066667,
+          "price": 124.15
+        },
+        {
+          "ticker": "AVGO",
+          "name": "Broadcom",
+          "rank_ma": 12,
+          "weight": 0.066667,
+          "price": 396.6
+        }
+      ]
+    },
+    "vt18": {
+      "exposure": 0.5297,
+      "cash_pct": 47.03,
+      "holdings": [
+        {
+          "ticker": "SNDK",
+          "name": "Sandisk",
+          "rank_ma": 4,
+          "weight": 0.026484,
+          "price": 1642.0
+        },
+        {
+          "ticker": "INTC",
+          "name": "Intel",
+          "rank_ma": 6,
+          "weight": 0.026484,
+          "price": 110.27
+        },
+        {
+          "ticker": "UNH",
+          "name": "UnitedHealth Group",
+          "rank_ma": 30,
+          "weight": 0.026484,
+          "price": 406.57
+        },
+        {
+          "ticker": "KLAC",
+          "name": "KLA Corporation",
+          "rank_ma": 48,
+          "weight": 0.026484,
+          "price": 2108.0601
+        },
+        {
+          "ticker": "CAT",
+          "name": "Caterpillar Inc.",
+          "rank_ma": 34,
+          "weight": 0.026484,
+          "price": 915.64
+        },
+        {
+          "ticker": "AMAT",
+          "name": "Applied Materials",
+          "rank_ma": 20,
+          "weight": 0.026484,
+          "price": 492.17
+        },
+        {
+          "ticker": "AVGO",
+          "name": "Broadcom",
+          "rank_ma": 12,
+          "weight": 0.026484,
+          "price": 396.6
+        },
+        {
+          "ticker": "CSCO",
+          "name": "Cisco",
+          "rank_ma": 21,
+          "weight": 0.026484,
+          "price": 124.15
+        },
+        {
+          "ticker": "TXN",
+          "name": "Texas Instruments",
+          "rank_ma": 36,
+          "weight": 0.026484,
+          "price": 290.9
+        },
+        {
+          "ticker": "GEV",
+          "name": "GE Vernova",
+          "rank_ma": 35,
+          "weight": 0.026484,
+          "price": 933.85
+        },
+        {
+          "ticker": "GLW",
+          "name": "Corning Inc.",
+          "rank_ma": 28,
+          "weight": 0.026484,
+          "price": 187.54
+        },
+        {
+          "ticker": "MU",
+          "name": "Micron Technology",
+          "rank_ma": 1,
+          "weight": 0.026484,
+          "price": 949.28
+        },
+        {
+          "ticker": "VRT",
+          "name": "Vertiv",
+          "rank_ma": 46,
+          "weight": 0.026484,
+          "price": 300.57
+        },
+        {
+          "ticker": "COHR",
+          "name": "Coherent Corp.",
+          "rank_ma": 37,
+          "weight": 0.026484,
+          "price": 401.93
+        },
+        {
+          "ticker": "AMD",
+          "name": "Advanced Micro Devices",
+          "rank_ma": 5,
+          "weight": 0.026484,
+          "price": 490.33
+        },
+        {
+          "ticker": "WDC",
+          "name": "Western Digital",
+          "rank_ma": 18,
+          "weight": 0.026484,
+          "price": 526.93
+        },
+        {
+          "ticker": "STX",
+          "name": "Seagate Technology",
+          "rank_ma": 19,
+          "weight": 0.026484,
+          "price": 876.77
+        },
+        {
+          "ticker": "LITE",
+          "name": "Lumentum",
+          "rank_ma": 16,
+          "weight": 0.026484,
+          "price": 895.4
+        },
+        {
+          "ticker": "DELL",
+          "name": "Dell Technologies",
+          "rank_ma": 29,
+          "weight": 0.026484,
+          "price": 400.77
+        },
+        {
+          "ticker": "LRCX",
+          "name": "Lam Research",
+          "rank_ma": 27,
+          "weight": 0.026484,
+          "price": 324.45
+        }
+      ]
+    }
+  }
+};
 
 /* ==================== 策略切换 ==================== */
 let itPlotted = false;
 function showView(name) {
   document.getElementById('view-hot').style.display = (name === 'hot') ? '' : 'none';
   document.getElementById('view-index').style.display = (name === 'index') ? '' : 'none';
+  document.getElementById('view-lowvol').style.display = (name === 'lowvol') ? '' : 'none';
   if (name === 'index' && !itPlotted) {
     renderIndexChart();
     itPlotted = true;
@@ -2265,6 +2742,129 @@ document.getElementById('symbol-select').addEventListener('change', function () 
   document.getElementById('it-detail').innerHTML =
     '<div class="placeholder">点击图中的红 / 绿点查看当日明细 →</div>';
 });
+
+/* ==================== LowVolatility 视图 ==================== */
+(function () {
+  if (!DATA_LOWVOL || !DATA_LOWVOL.strategies) return;
+  document.getElementById('lv-rebal').textContent = DATA_LOWVOL.rebalance_date || '?';
+  document.getElementById('lv-price').textContent = DATA_LOWVOL.price_date || '?';
+  document.getElementById('lv-gen').textContent = DATA_LOWVOL.generated_at || '';
+  document.getElementById('lv-period').textContent =
+    (DATA_LOWVOL.period_start || '?') + '  ~  ' + (DATA_LOWVOL.period_end || '?');
+  if (DATA_LOWVOL.default_capital)
+    document.getElementById('lv-capital').value = DATA_LOWVOL.default_capital;
+  if (DATA_LOWVOL.blend_ratio != null)
+    document.getElementById('lv-ratio').value = DATA_LOWVOL.blend_ratio;
+
+  function lvFmt(v) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  // 两腿权重映射 → 任意比例 r 的 blend 纯前端重算 (blend = r×smooth + (1−r)×vt18)
+  const S = DATA_LOWVOL.strategies;
+  function legMap(key) {
+    const m = {};
+    if (S[key]) S[key].holdings.forEach(h => { m[h.ticker] = h; });
+    return m;
+  }
+  const smoothM = legMap('smooth'), vt18M = legMap('vt18');
+  const smoothExpo = S.smooth ? S.smooth.exposure : 0;
+  const vt18Expo = S.vt18 ? S.vt18.exposure : 0;
+  function customBlend(r) {
+    const tickers = new Set([...Object.keys(smoothM), ...Object.keys(vt18M)]);
+    const holdings = [];
+    tickers.forEach(t => {
+      const sh = smoothM[t], vh = vt18M[t];
+      const w = r * (sh ? sh.weight : 0) + (1 - r) * (vh ? vh.weight : 0);
+      if (w <= 1e-9) return;
+      const info = sh || vh;
+      holdings.push({ ticker: t, name: info.name, rank_ma: info.rank_ma, weight: w, price: info.price });
+    });
+    holdings.sort((a, b) => b.weight - a.weight);
+    const expo = r * smoothExpo + (1 - r) * vt18Expo;
+    return { exposure: expo, cash_pct: (1 - expo) * 100, holdings: holdings };
+  }
+  function lvRecalc() {
+    const rUsed = Math.min(1, Math.max(0, parseFloat(document.getElementById('lv-ratio').value) || 0.35));
+    const s = customBlend(rUsed);
+    if (!s) return;
+    const cap = parseFloat(document.getElementById('lv-capital').value) || 0;
+    const expo = s.exposure;
+    document.getElementById('lv-expo').textContent = expo.toFixed(4);
+    document.getElementById('lv-inv').textContent = (expo * 100).toFixed(1) + '%';
+    document.getElementById('lv-cash').textContent = s.cash_pct.toFixed(1) + '%';
+
+    const tbody = document.getElementById('lv-tbody');
+    tbody.innerHTML = '';
+    let totAlloc = 0, totReal = 0;
+    s.holdings.forEach(h => {
+      const alloc = h.weight * cap;
+      const shares = (h.price && h.price > 0) ? Math.round(alloc / h.price * 10) / 10 : 0;
+      const real = shares * (h.price || 0);
+      totAlloc += alloc; totReal += real;
+      const shDisp = (h.price && h.price > 0) ? shares.toFixed(1) : '—';
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><code class="ticker">' + h.ticker + '</code></td>' +
+        '<td>' + (h.name || '') + '</td>' +
+        '<td>' + (h.rank_ma != null ? h.rank_ma : '—') + '</td>' +
+        '<td>' + (h.weight * 100).toFixed(2) + '%</td>' +
+        '<td>' + (h.price ? lvFmt(h.price) : '—') + '</td>' +
+        '<td>' + lvFmt(alloc) + '</td>' +
+        '<td><b>' + shDisp + '</b></td>' +
+        '<td>' + (h.price ? lvFmt(real) : '—') + '</td>';
+      tbody.appendChild(tr);
+    });
+    const cash = cap - totReal;
+    document.getElementById('lv-deploy-line').innerHTML =
+      '→ 仓位 <b>' + (expo * 100).toFixed(1) + '%</b>：实际买入 <b>$' + lvFmt(totReal) +
+      '</b>，实际现金 <b>$' + lvFmt(cash) + '</b>';
+    document.getElementById('lv-s-alloc').textContent = lvFmt(totAlloc);
+    document.getElementById('lv-s-shares').textContent = '—';
+    document.getElementById('lv-s-realcost').textContent = lvFmt(totReal);
+
+    // 解释面板: 按腿分解 (随 r / 资金 即时更新; r=1 显示纯 smooth, r=0 纯 vt18)
+    const exp = document.getElementById('lv-explain');
+    exp.style.display = '';
+    {
+      const eS = smoothExpo, eV = vt18Expo;
+      const sAlloc = rUsed * cap, vAlloc = (1 - rUsed) * cap;
+      const sInv = sAlloc * eS, sCash = sAlloc * (1 - eS);
+      const vInv = vAlloc * eV, vCash = vAlloc * (1 - eV);
+      const totInv = sInv + vInv, totCash = sCash + vCash;
+      const resid = totInv - totReal;
+      const th = (t) => '<th align="right">' + t + '</th>';
+      const td = (t, a) => '<td align="' + (a || 'right') + '">' + t + '</td>';
+      const row = (cells) => '<tr>' + cells + '</tr>';
+      exp.style.display = '';
+      exp.innerHTML =
+        '<b>参数 r = ' + rUsed.toFixed(2) + '（smooth 占比）&nbsp;·&nbsp; 资金 $' + lvFmt(cap) +
+        ' &nbsp;·&nbsp; 池内股票 ' + s.holdings.length + ' 票</b>' +
+        '<table style="width:100%;margin:8px 0 6px;border-collapse:collapse;font-size:13px">' +
+        '<tr style="border-bottom:1px solid #bbf7d0">' + td('腿', 'left') + th('配比') +
+          th('该腿仓位') + th('目标投入') + th('目标现金') + '</tr>' +
+        row(td('smooth', 'left') + td((rUsed * 100).toFixed(0) + '%') + td((eS * 100).toFixed(0) + '%') +
+            td('$' + lvFmt(sInv)) + td('$' + lvFmt(sCash))) +
+        row(td('vt18（18% 波动目标）', 'left') + td(((1 - rUsed) * 100).toFixed(0) + '%') +
+            td((eV * 100).toFixed(0) + '%') + td('$' + lvFmt(vInv)) + td('$' + lvFmt(vCash))) +
+        '<tr style="border-top:1px solid #86efac;font-weight:600">' + td('blend 合计', 'left') +
+          td('100%') + td((s.exposure * 100).toFixed(1) + '%') + td('$' + lvFmt(totInv)) +
+          td('$' + lvFmt(totCash)) + '</tr>' +
+        '</table>' +
+        '解释：资金按 <b>' + (rUsed * 100).toFixed(0) + '% / ' + ((1 - rUsed) * 100).toFixed(0) +
+        '%</b> 分给 smooth / vt18。smooth 腿投 ' + (eS * 100).toFixed(0) + '%（现金 $' + lvFmt(sCash) +
+        '），vt18 腿投 ' + (eV * 100).toFixed(0) + '%（现金 $' + lvFmt(vCash) +
+        '，被 18% 波动目标压低）。合计入市 <b>' + (s.exposure * 100).toFixed(1) + '%（$' + lvFmt(totInv) +
+        '）</b>、目标现金 <b>' + s.cash_pct.toFixed(1) + '%（$' + lvFmt(totCash) + '）</b>（主要来自 <b>' +
+        (vCash >= sCash ? 'vt18' : 'smooth') + '</b> 腿）。' +
+        '<br>小数股（0.1 股精度）：实买 <b>$' + lvFmt(totReal) + '</b>、实际现金 <b>$' + lvFmt(cash) +
+        '</b> ≈ 目标现金（差 $' + lvFmt(Math.abs(resid)) + ' 来自 0.1 股取整，微小）。';
+    }
+  }
+  document.getElementById('lv-capital').addEventListener('input', lvRecalc);
+  document.getElementById('lv-ratio').addEventListener('input', lvRecalc);
+  lvRecalc();
+})();
 </script>
 
 </body>
