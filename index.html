@@ -264,7 +264,7 @@ const DATA = {
   "period_start": "2026-06-08",
   "period_end": "2026-06-12",
   "price_date": "2026-06-10",
-  "generated_at": "2026-06-11 22:30:08",
+  "generated_at": "2026-06-11 22:40:05",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 0.82,
@@ -367,7 +367,7 @@ const DATA = {
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-06-11 22:30:08",
+  "generated_at": "2026-06-11 22:40:05",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -8983,6 +8983,7 @@ document.getElementById('symbol-select').addEventListener('change', function () 
   }
   /* ---- 模型净值曲线 (对账监控): 资金 × blend(r) 净值, 归一到用户入场日 ---- */
   const NAV = DATA_LOWVOL.nav;
+  let navView = null;   // 当前曲线状态 (hover 提示用): {vals, dates, X, Y, cap, T, Hb}
   function lvNavRecalc() {
     const box = document.getElementById('lv-nav-box');
     if (!NAV || !NAV.dates || NAV.dates.length < 2) { box.style.display = 'none'; return; }
@@ -9037,7 +9038,43 @@ document.getElementById('symbol-select').addEventListener('change', function () 
     g += '<polyline points="' + pts + '" fill="none" stroke="#2563eb" stroke-width="2"/>' +
          '<circle cx="' + X(vals.length - 1).toFixed(1) + '" cy="' + Y(last).toFixed(1) + '" r="3.5" fill="#2563eb"/>';
     document.getElementById('lv-nav-chart').innerHTML = g;
+    navView = { vals: vals, dates: dates, X: X, Y: Y, cap: cap, T: T, Hb: H - B };
   }
+
+  /* hover 提示: 竖线 + 高亮点 + 浮层(日期/金额/累计收益/当日涨跌) */
+  const navSvg = document.getElementById('lv-nav-chart');
+  navSvg.addEventListener('mousemove', function (e) {
+    if (!navView || !navView.vals.length) return;
+    const rect = navSvg.getBoundingClientRect();
+    const sx = (e.clientX - rect.left) * (940 / rect.width);
+    const nv = navView, n = nv.vals.length;
+    let i = Math.round((sx - 80) / (940 - 80 - 16) * (n - 1));
+    i = Math.max(0, Math.min(n - 1, i));
+    const x = nv.X(i), v = nv.vals[i], y = nv.Y(v);
+    const cum = nv.cap > 0 ? v / nv.cap - 1 : 0;
+    const day = i > 0 ? v / nv.vals[i - 1] - 1 : 0;
+    const pc = (p) => (p >= 0 ? '+' : '') + (p * 100).toFixed(2) + '%';
+    const bw = 192, bh = 60;
+    const bx = (x + 12 + bw > 940 - 16) ? x - 12 - bw : x + 12;
+    let tip = document.getElementById('lv-nav-tip');
+    if (!tip) {
+      tip = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      tip.id = 'lv-nav-tip';
+      navSvg.appendChild(tip);
+    }
+    tip.innerHTML =
+      '<line x1="' + x + '" y1="' + nv.T + '" x2="' + x + '" y2="' + nv.Hb + '" stroke="#94a3b8" stroke-dasharray="3 3"/>' +
+      '<circle cx="' + x + '" cy="' + y + '" r="4" fill="#1d4ed8" stroke="#fff" stroke-width="1.5"/>' +
+      '<rect x="' + bx + '" y="18" width="' + bw + '" height="' + bh + '" rx="6" fill="#1f2937" opacity="0.93"/>' +
+      '<text x="' + (bx + 10) + '" y="34" font-size="11.5" fill="#cbd5e1">' + nv.dates[i] + '</text>' +
+      '<text x="' + (bx + 10) + '" y="50" font-size="12.5" font-weight="600" fill="#fff">$' + lvFmt(v) + '</text>' +
+      '<text x="' + (bx + 10) + '" y="66" font-size="11.5" fill="' + (cum >= 0 ? '#86efac' : '#fca5a5') + '">累计 ' + pc(cum) +
+      '<tspan fill="#cbd5e1">　当日 ' + pc(day) + '</tspan></text>';
+  });
+  navSvg.addEventListener('mouseleave', function () {
+    const t = document.getElementById('lv-nav-tip');
+    if (t) t.remove();
+  });
 
   document.getElementById('lv-capital').addEventListener('input', function () { lvRecalc(); lvNavRecalc(); });
   document.getElementById('lv-ratio').addEventListener('input', function () { lvRecalc(); lvNavRecalc(); });
