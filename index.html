@@ -264,7 +264,7 @@ const DATA = {
   "period_start": "2026-06-08",
   "period_end": "2026-06-12",
   "price_date": "2026-06-10",
-  "generated_at": "2026-06-11 22:40:05",
+  "generated_at": "2026-06-11 22:51:12",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 0.82,
@@ -367,7 +367,7 @@ const DATA = {
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-06-11 22:40:05",
+  "generated_at": "2026-06-11 22:51:12",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -9003,6 +9003,17 @@ document.getElementById('symbol-select').addEventListener('change', function () 
     if (i0 < 0) i0 = n - 1;
     const vals = [], dates = [];
     for (let i = i0; i < n; i++) { vals.push(cap * bn[i] / bn[i0]); dates.push(NAV.dates[i]); }
+    if (vals.length < 2) {
+      document.getElementById('lv-nav-stats').innerHTML =
+        '起始日期 <b>' + startInp.value + '</b> ≥ 净值数据末日 <b>' + NAV.dates[n - 1] +
+        '</b>，区间暂时只有 1 个点、连不成曲线。净值每日随 cron 生长（引擎口径比价格库晚 1 个交易日），' +
+        '下个交易日后这里就会出现从你入场日开始的曲线。';
+      document.getElementById('lv-nav-chart').innerHTML =
+        '<text x="470" y="165" text-anchor="middle" font-size="13" fill="#94a3b8">等待下一交易日数据…（净值数据至 ' +
+        NAV.dates[n - 1] + '）</text>';
+      navView = null;
+      return;
+    }
     let peak = -Infinity, mdd = 0;
     vals.forEach(v => { if (v > peak) peak = v; const dd = v / peak - 1; if (dd < mdd) mdd = dd; });
     const last = vals[vals.length - 1], ret = cap > 0 ? last / cap - 1 : 0;
