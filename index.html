@@ -132,6 +132,19 @@
   </tfoot>
 </table>
 
+<div class="input-box" style="flex-direction:column;align-items:stretch;gap:10px;margin-top:18px">
+  <label for="rb-input">🔄 换仓助手 — 输入我的当前持仓（每行：<code>代码 股数</code>，如 <code>AAPL 12</code>；新建仓可留空）</label>
+  <textarea id="rb-input" rows="6" placeholder="AAPL 12&#10;NVDA 3.5&#10;MSFT 5"
+            style="font-family:ui-monospace,Consolas,monospace;font-size:15px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:4px;resize:vertical"></textarea>
+  <div>
+    <button id="rb-btn" type="button"
+            style="font-size:15px;padding:7px 18px;background:#1f77b4;color:#fff;border:none;border-radius:5px;cursor:pointer">计算调仓</button>
+    <span class="hint" style="margin-left:10px">对比上方 R4 目标持仓（目标随“本次投入总金额”变化）。代码大小写、BRK.B / BRK-B 均可。</span>
+  </div>
+</div>
+
+<div id="rb-result"></div>
+
 <div class="footnote">
   · <b>R4 规则</b>：每周一调仓。在最近周五的 SP500 池里按 20 日成交额排名取 top 15。<br>
   · <b>Regime 切换</b>：若 SPY 过去 20 日收益 &gt; 0 <i>且</i> 过去 20 日年化波动率 &lt; 18%（强牛市），用 <b>Asym120</b>（下行波动率/上行波动率）信号砍 5；否则用 <b>A20</b>（过去 20 日累积夜盘收益 = retail over-buy）砍 5。<br>
@@ -248,7 +261,7 @@ const DATA = {
   "period_start": "2026-06-15",
   "period_end": "2026-06-19",
   "price_date": "2026-06-12",
-  "generated_at": "2026-06-15 16:00:12",
+  "generated_at": "2026-06-15 16:36:26",
   "regime": "overnight",
   "signal_used": "A20 (overnight)",
   "spy_20d_ret_pct": -0.86,
@@ -351,7 +364,7 @@ const DATA = {
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-06-15 16:00:12",
+  "generated_at": "2026-06-15 16:36:26",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -2640,6 +2653,8 @@ function fmtSig(v, isPercent) {
   return v.toFixed(3);
 }
 
+let R4_TARGET = [];
+
 function recalc() {
   const cap = parseFloat(document.getElementById('capital').value) || 0;
   const n = DATA.n_holdings;
@@ -2648,6 +2663,7 @@ function recalc() {
 
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
+  R4_TARGET = [];
   let totalShares = 0;
   let totalRealCost = 0;
 
@@ -2661,6 +2677,7 @@ function recalc() {
     const displayShares = (price && price > 0) ? Math.round(shares * 10) / 10 : 0;
     const realCost = displayShares * (price || 0);
     totalRealCost += realCost;
+    R4_TARGET.push({ ticker: h.ticker, name: h.name || '', price: price || 0, shares: displayShares });
 
     const asymClass = activeSignal === 'asym120' ? 'signal-active' : 'signal-muted';
     const a20Class = activeSignal === 'a20' ? 'signal-active' : 'signal-muted';
@@ -2692,9 +2709,86 @@ function recalc() {
   const diffStr = (diff >= 0 ? '+' : '−') + fmtMoney(Math.abs(diff));
   document.getElementById('s-realcost').textContent =
     fmtMoney(totalRealCost) + '  (vs 分配 ' + diffStr + ')';
+
+  if (typeof rbRecalc === 'function') rbRecalc();
 }
 document.getElementById('capital').addEventListener('input', recalc);
 recalc();
+
+/* ==================== 换仓助手 (R4 视图) ==================== */
+function rbNorm(s) { return s.trim().toUpperCase().replace(/\./g, '-'); }
+
+function rbParse(text) {
+  // 每行 "代码 股数" (空格/逗号/Tab 分隔); 容错大小写与 BRK.B / BRK-B
+  const map = {};
+  text.split(/\n/).forEach(line => {
+    const p = line.trim().split(/[\s,]+/).filter(Boolean);
+    if (p.length < 2) return;
+    const tk = rbNorm(p[0]);
+    const sh = parseFloat(p[1]);
+    if (!tk || isNaN(sh) || sh < 0) return;
+    map[tk] = (map[tk] || 0) + sh;
+  });
+  return map;
+}
+
+function rbRecalc() {
+  const box = document.getElementById('rb-result');
+  if (!box) return;
+  const raw = document.getElementById('rb-input').value;
+  if (!raw.trim()) { box.innerHTML = ''; return; }
+
+  const cur = rbParse(raw);
+  const tgt = {};
+  R4_TARGET.forEach(t => { tgt[rbNorm(t.ticker)] = t; });
+
+  const EPS = 0.05;                       // 小数股精度 0.1, 半步内视为不动
+  const buys = [], sells = [], holds = [];
+  R4_TARGET.forEach(t => {
+    const c = cur[rbNorm(t.ticker)] || 0;
+    const d = Math.round((t.shares - c) * 10) / 10;
+    if (d > EPS) buys.push({ ticker: t.ticker, sh: d, price: t.price });
+    else if (d < -EPS) sells.push({ ticker: t.ticker, sh: -d, price: t.price });
+    else holds.push({ ticker: t.ticker, sh: t.shares });
+  });
+  // 当前持有但已不在目标池 -> 全部卖出 (前端无其最新价, 金额留空)
+  Object.keys(cur).forEach(tk => {
+    if (!tgt[tk]) sells.push({ ticker: tk, sh: cur[tk], price: null, exit: true });
+  });
+
+  const rowsHtml = (arr, isBuy) => arr.map(r => {
+    const amt = (r.price && r.price > 0) ? fmtMoney(r.sh * r.price) : '—';
+    const note = r.exit ? ' <span class="hint">(已不在目标池)</span>' : '';
+    return '<tr><td><code class="ticker">' + r.ticker + '</code>' + note + '</td>'
+      + '<td class="' + (isBuy ? 'pos' : 'neg') + '"><b>' + (isBuy ? '买入' : '卖出') + '</b></td>'
+      + '<td>' + fmtShares(r.sh) + '</td>'
+      + '<td>' + (r.price ? fmtMoney(r.price) : '—') + '</td>'
+      + '<td>' + amt + '</td></tr>';
+  }).join('');
+
+  const buyAmt = buys.reduce((s, r) => s + ((r.price && r.price > 0) ? r.sh * r.price : 0), 0);
+  const sellAmt = sells.reduce((s, r) => s + ((r.price && r.price > 0) ? r.sh * r.price : 0), 0);
+
+  let html = '<table style="margin-top:6px"><thead><tr>'
+    + '<th>Ticker</th><th>动作</th><th>股数</th><th>最新价 ($)</th><th>金额 ($)</th>'
+    + '</tr></thead><tbody>';
+  if (buys.length || sells.length) {
+    html += rowsHtml(buys, true) + rowsHtml(sells, false);
+  } else {
+    html += '<tr><td colspan="5" style="text-align:center;color:#15803d">✓ 当前持仓已与目标一致，无需调整</td></tr>';
+  }
+  html += '</tbody><tfoot><tr class="summary">'
+    + '<td colspan="2" style="text-align:right">买入合计 / 卖出合计</td><td>—</td><td>—</td>'
+    + '<td><span class="pos">+' + fmtMoney(buyAmt) + '</span> / <span class="neg">−' + fmtMoney(sellAmt) + '</span></td>'
+    + '</tr></tfoot></table>';
+  if (holds.length) {
+    html += '<div class="hint" style="margin-top:8px">不变（' + holds.length + '）：'
+      + holds.map(h => h.ticker + ' ' + fmtShares(h.sh)).join('，') + '</div>';
+  }
+  box.innerHTML = html;
+}
+document.getElementById('rb-btn').addEventListener('click', rbRecalc);
+document.getElementById('rb-input').addEventListener('input', rbRecalc);
 
 /* ==================== IndexTrading 视图 ==================== */
 document.getElementById('it-gen').textContent = DATA_INDEX.generated_at || '';
