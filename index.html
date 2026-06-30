@@ -242,6 +242,19 @@
   </tfoot>
 </table>
 
+<div class="input-box" style="flex-direction:column;align-items:stretch;gap:10px;margin-top:18px">
+  <label for="lv-rb-input">🔄 换仓助手 — 输入我的当前持仓（每行：<code>代码 股数</code>，如 <code>AAPL 12</code>；新建仓可留空）</label>
+  <textarea id="lv-rb-input" rows="6" placeholder="AAPL 12&#10;NVDA 3.5&#10;MSFT 5"
+            style="font-family:ui-monospace,Consolas,monospace;font-size:15px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:4px;resize:vertical"></textarea>
+  <div>
+    <button id="lv-rb-btn" type="button"
+            style="font-size:15px;padding:7px 18px;background:#1f77b4;color:#fff;border:none;border-radius:5px;cursor:pointer">计算调仓</button>
+    <span class="hint" style="margin-left:10px">对比上方 LowVolatility 目标持仓（目标随“配比 r”与“本次投入总金额”变化）。代码大小写、BRK.B / BRK-B 均可。</span>
+  </div>
+</div>
+
+<div id="lv-rb-result"></div>
+
 <div class="footnote">
   · <b>LowVolatility</b>：SP500 前 50 成交量池内，按 ln(价格) 对时间回归的 斜率×R²（平稳上涨）选股，月度调仓。<br>
   · <b>smooth 定稿</b>：取前 15 等权 + mixed_async_dd 深熊门（SPY 连破 200 日均线 8-9 周且回撤 ≥12% 才减仓，策略自身动能回升即回补）。<br>
@@ -364,7 +377,7 @@ const DATA = {
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-06-30 07:44:02",
+  "generated_at": "2026-06-30 13:56:56",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -3145,6 +3158,7 @@ document.getElementById('symbol-select').addEventListener('change', function () 
     const expo = r * smoothExpo + (1 - r) * vt18Expo;
     return { exposure: expo, cash_pct: (1 - expo) * 100, holdings: holdings };
   }
+  let lowvolTarget = [];                     // 换仓助手对照用: 当前 r/资金 下每只目标 {ticker,name,price,shares}
   function lvRecalc() {
     const rUsed = Math.min(1, Math.max(0, parseFloat(document.getElementById('lv-ratio').value) || 0.35));
     const s = customBlend(rUsed);
@@ -3157,11 +3171,13 @@ document.getElementById('symbol-select').addEventListener('change', function () 
 
     const tbody = document.getElementById('lv-tbody');
     tbody.innerHTML = '';
+    lowvolTarget = [];
     let totAlloc = 0, totReal = 0;
     s.holdings.forEach(h => {
       const alloc = h.weight * cap;
       const shares = (h.price && h.price > 0) ? Math.round(alloc / h.price * 10) / 10 : 0;
       const real = shares * (h.price || 0);
+      lowvolTarget.push({ ticker: h.ticker, name: h.name || '', price: h.price || 0, shares: shares });
       totAlloc += alloc; totReal += real;
       const shDisp = (h.price && h.price > 0) ? shares.toFixed(1) : '—';
       const tr = document.createElement('tr');
@@ -3221,9 +3237,70 @@ document.getElementById('symbol-select').addEventListener('change', function () 
         '<br>小数股（0.1 股精度）：实买 <b>$' + lvFmt(totReal) + '</b>、实际现金 <b>$' + lvFmt(cash) +
         '</b> ≈ 目标现金（差 $' + lvFmt(Math.abs(resid)) + ' 来自 0.1 股取整，微小）。';
     }
+    lvRbRecalc();
   }
   document.getElementById('lv-capital').addEventListener('input', lvRecalc);
   document.getElementById('lv-ratio').addEventListener('input', lvRecalc);
+
+  /* ---------- 换仓助手 (LowVolatility 视图) ---------- */
+  function lvRbRecalc() {
+    const box = document.getElementById('lv-rb-result');
+    if (!box) return;
+    const raw = document.getElementById('lv-rb-input').value;
+    if (!raw.trim()) { box.innerHTML = ''; return; }
+
+    const cur = rbParse(raw);
+    const tgt = {};
+    lowvolTarget.forEach(t => { tgt[rbNorm(t.ticker)] = t; });
+
+    const EPS = 0.05;                       // 小数股精度 0.1, 半步内视为不动
+    const buys = [], sells = [], holds = [];
+    lowvolTarget.forEach(t => {
+      const c = cur[rbNorm(t.ticker)] || 0;
+      const d = Math.round((t.shares - c) * 10) / 10;
+      if (d > EPS) buys.push({ ticker: t.ticker, sh: d, price: t.price });
+      else if (d < -EPS) sells.push({ ticker: t.ticker, sh: -d, price: t.price });
+      else holds.push({ ticker: t.ticker, sh: t.shares });
+    });
+    // 当前持有但已不在目标池 -> 全部卖出 (前端无其最新价, 金额留空)
+    Object.keys(cur).forEach(tk => {
+      if (!tgt[tk]) sells.push({ ticker: tk, sh: cur[tk], price: null, exit: true });
+    });
+
+    const rowsHtml = (arr, isBuy) => arr.map(r => {
+      const amt = (r.price && r.price > 0) ? fmtMoney(r.sh * r.price) : '—';
+      const note = r.exit ? ' <span class="hint">(已不在目标池)</span>' : '';
+      return '<tr><td><code class="ticker">' + r.ticker + '</code>' + note + '</td>'
+        + '<td class="' + (isBuy ? 'pos' : 'neg') + '"><b>' + (isBuy ? '买入' : '卖出') + '</b></td>'
+        + '<td>' + fmtShares(r.sh) + '</td>'
+        + '<td>' + (r.price ? fmtMoney(r.price) : '—') + '</td>'
+        + '<td>' + amt + '</td></tr>';
+    }).join('');
+
+    const buyAmt = buys.reduce((s, r) => s + ((r.price && r.price > 0) ? r.sh * r.price : 0), 0);
+    const sellAmt = sells.reduce((s, r) => s + ((r.price && r.price > 0) ? r.sh * r.price : 0), 0);
+
+    let html = '<table style="margin-top:6px"><thead><tr>'
+      + '<th>Ticker</th><th>动作</th><th>股数</th><th>最新价 ($)</th><th>金额 ($)</th>'
+      + '</tr></thead><tbody>';
+    if (buys.length || sells.length) {
+      html += rowsHtml(buys, true) + rowsHtml(sells, false);
+    } else {
+      html += '<tr><td colspan="5" style="text-align:center;color:#15803d">✓ 当前持仓已与目标一致，无需调整</td></tr>';
+    }
+    html += '</tbody><tfoot><tr class="summary">'
+      + '<td colspan="2" style="text-align:right">买入合计 / 卖出合计</td><td>—</td><td>—</td>'
+      + '<td><span class="pos">+' + fmtMoney(buyAmt) + '</span> / <span class="neg">−' + fmtMoney(sellAmt) + '</span></td>'
+      + '</tr></tfoot></table>';
+    if (holds.length) {
+      html += '<div class="hint" style="margin-top:8px">不变（' + holds.length + '）：'
+        + holds.map(h => h.ticker + ' ' + fmtShares(h.sh)).join('，') + '</div>';
+    }
+    box.innerHTML = html;
+  }
+  document.getElementById('lv-rb-btn').addEventListener('click', lvRbRecalc);
+  document.getElementById('lv-rb-input').addEventListener('input', lvRbRecalc);
+
   lvRecalc();
 })();
 </script>
