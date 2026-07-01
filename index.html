@@ -139,6 +139,8 @@
   <div>
     <button id="rb-btn" type="button"
             style="font-size:15px;padding:7px 18px;background:#1f77b4;color:#fff;border:none;border-radius:5px;cursor:pointer">计算调仓</button>
+    <button id="rb-dl-btn" type="button"
+            style="font-size:15px;padding:7px 18px;background:#15803d;color:#fff;border:none;border-radius:5px;cursor:pointer;margin-left:8px">⬇️ 下载 IB Basket CSV</button>
     <span class="hint" style="margin-left:10px">对比上方 R4 目标持仓（目标随“本次投入总金额”变化）。代码大小写、BRK.B / BRK-B 均可。</span>
   </div>
 </div>
@@ -249,6 +251,8 @@
   <div>
     <button id="lv-rb-btn" type="button"
             style="font-size:15px;padding:7px 18px;background:#1f77b4;color:#fff;border:none;border-radius:5px;cursor:pointer">计算调仓</button>
+    <button id="lv-rb-dl-btn" type="button"
+            style="font-size:15px;padding:7px 18px;background:#15803d;color:#fff;border:none;border-radius:5px;cursor:pointer;margin-left:8px">⬇️ 下载 IB Basket CSV</button>
     <span class="hint" style="margin-left:10px">对比上方 LowVolatility 目标持仓（目标随“配比 r”与“本次投入总金额”变化）。代码大小写、BRK.B / BRK-B 均可。</span>
   </div>
 </div>
@@ -274,7 +278,7 @@ const DATA = {
   "period_start": "2026-06-29",
   "period_end": "2026-07-03",
   "price_date": "2026-06-30",
-  "generated_at": "2026-07-01 14:19:47",
+  "generated_at": "2026-07-01 17:17:19",
   "regime": "overnight",
   "signal_used": "A20 (overnight)",
   "spy_20d_ret_pct": -3.15,
@@ -377,7 +381,7 @@ const DATA = {
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-07-01 14:19:47",
+  "generated_at": "2026-07-01 17:17:19",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -2975,29 +2979,68 @@ function rbParse(text) {
   return map;
 }
 
-function rbRecalc() {
-  const box = document.getElementById('rb-result');
-  if (!box) return;
-  const raw = document.getElementById('rb-input').value;
-  if (!raw.trim()) { box.innerHTML = ''; return; }
-
-  const cur = rbParse(raw);
+/* 换仓差额计算 (R4 与 LowVol 共用): 目标 vs 当前 → {buys,sells,holds}, 差额取 0.1 股精度。
+   当前持有但已不在目标池的票 → 全部卖出 (exit)。 */
+function rbCompute(raw, targetArr) {
+  const cur = rbParse(raw || '');
   const tgt = {};
-  R4_TARGET.forEach(t => { tgt[rbNorm(t.ticker)] = t; });
-
+  targetArr.forEach(t => { tgt[rbNorm(t.ticker)] = t; });
   const EPS = 0.05;                       // 小数股精度 0.1, 半步内视为不动
   const buys = [], sells = [], holds = [];
-  R4_TARGET.forEach(t => {
+  targetArr.forEach(t => {
     const c = cur[rbNorm(t.ticker)] || 0;
     const d = Math.round((t.shares - c) * 10) / 10;
     if (d > EPS) buys.push({ ticker: t.ticker, sh: d, price: t.price });
     else if (d < -EPS) sells.push({ ticker: t.ticker, sh: -d, price: t.price });
     else holds.push({ ticker: t.ticker, sh: t.shares });
   });
-  // 当前持有但已不在目标池 -> 全部卖出 (前端无其最新价, 金额留空)
   Object.keys(cur).forEach(tk => {
     if (!tgt[tk]) sells.push({ ticker: tk, sh: cur[tk], price: null, exit: true });
   });
+  return { buys, sells, holds };
+}
+
+/* 换仓表 → IB BasketTrader CSV (市价单)。数量 .toFixed(1) 与表格"股数"列一致。 */
+function basketCsv(buys, sells, tag) {
+  const head = 'Action,Quantity,Symbol,SecType,Exchange,Currency,TimeInForce,OrderType,BasketTag';
+  const q = x => (Math.round(x * 10) / 10).toFixed(1);      // 0.1 精度, 无千分位
+  const sym = t => String(t).toUpperCase();                 // IB symbol 原样大写 (class 股如 BRK.B 暂原样)
+  const line = (act, r) => [act, q(r.sh), sym(r.ticker), 'STK', 'SMART', 'USD', 'DAY', 'MKT', tag].join(',');
+  const rows = buys.map(r => line('BUY', r)).concat(sells.map(r => line('SELL', r)));
+  return head + '\n' + rows.join('\n') + '\n';
+}
+function rbTodayTag() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return '' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate());
+}
+function rbDownloadCsv(fn, text) {
+  const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fn;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+/* 下载入口: 按当前输入重算差额 → CSV。空差额提示不生成。 */
+function rbDownload(inputId, targetArr, name) {
+  const raw = (document.getElementById(inputId) || {}).value || '';
+  const { buys, sells } = rbCompute(raw, targetArr);
+  if (!buys.length && !sells.length) {
+    alert('当前持仓已与目标一致（或未输入持仓），无需下单，未生成文件。');
+    return;
+  }
+  const tag = rbTodayTag();
+  rbDownloadCsv('ibkr_basket_' + name + '_' + tag + '.csv',
+                basketCsv(buys, sells, 'Basket' + tag));
+}
+
+function rbRecalc() {
+  const box = document.getElementById('rb-result');
+  if (!box) return;
+  const raw = document.getElementById('rb-input').value;
+  if (!raw.trim()) { box.innerHTML = ''; return; }
+
+  const { buys, sells, holds } = rbCompute(raw, R4_TARGET);
 
   const rowsHtml = (arr, isBuy) => arr.map(r => {
     const amt = (r.price && r.price > 0) ? fmtMoney(r.sh * r.price) : '—';
@@ -3032,6 +3075,7 @@ function rbRecalc() {
 }
 document.getElementById('rb-btn').addEventListener('click', rbRecalc);
 document.getElementById('rb-input').addEventListener('input', rbRecalc);
+document.getElementById('rb-dl-btn').addEventListener('click', () => rbDownload('rb-input', R4_TARGET, 'r4'));
 
 /* ==================== IndexTrading 视图 ==================== */
 document.getElementById('it-gen').textContent = DATA_INDEX.generated_at || '';
@@ -3289,23 +3333,7 @@ document.getElementById('symbol-select').addEventListener('change', function () 
     const raw = document.getElementById('lv-rb-input').value;
     if (!raw.trim()) { box.innerHTML = ''; return; }
 
-    const cur = rbParse(raw);
-    const tgt = {};
-    lowvolTarget.forEach(t => { tgt[rbNorm(t.ticker)] = t; });
-
-    const EPS = 0.05;                       // 小数股精度 0.1, 半步内视为不动
-    const buys = [], sells = [], holds = [];
-    lowvolTarget.forEach(t => {
-      const c = cur[rbNorm(t.ticker)] || 0;
-      const d = Math.round((t.shares - c) * 10) / 10;
-      if (d > EPS) buys.push({ ticker: t.ticker, sh: d, price: t.price });
-      else if (d < -EPS) sells.push({ ticker: t.ticker, sh: -d, price: t.price });
-      else holds.push({ ticker: t.ticker, sh: t.shares });
-    });
-    // 当前持有但已不在目标池 -> 全部卖出 (前端无其最新价, 金额留空)
-    Object.keys(cur).forEach(tk => {
-      if (!tgt[tk]) sells.push({ ticker: tk, sh: cur[tk], price: null, exit: true });
-    });
+    const { buys, sells, holds } = rbCompute(raw, lowvolTarget);
 
     const rowsHtml = (arr, isBuy) => arr.map(r => {
       const amt = (r.price && r.price > 0) ? fmtMoney(r.sh * r.price) : '—';
@@ -3340,6 +3368,7 @@ document.getElementById('symbol-select').addEventListener('change', function () 
   }
   document.getElementById('lv-rb-btn').addEventListener('click', lvRbRecalc);
   document.getElementById('lv-rb-input').addEventListener('input', lvRbRecalc);
+  document.getElementById('lv-rb-dl-btn').addEventListener('click', () => rbDownload('lv-rb-input', lowvolTarget, 'lowvol'));
 
   lvRecalc();
 })();
