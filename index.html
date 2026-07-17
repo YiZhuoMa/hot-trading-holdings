@@ -103,6 +103,11 @@
 <div class="input-box">
   <label for="capital">本次投入总金额 ($)</label>
   <input type="number" id="capital" value="100000" step="1000" min="0">
+  <label for="lev-select" id="lev-label" style="margin-left:14px">版本：</label>
+  <select id="lev-select">
+    <option value="1" selected>V2@1（不加杠杆）</option>
+    <option value="2">V2@2（敏感门 + 杠杆≤2.0）</option>
+  </select>
   <span class="hint">输入后表格自动重算</span>
 </div>
 
@@ -152,6 +157,7 @@
   · <b>Regime 切换</b>：若 SPY 过去 20 日收益 &gt; 0 <i>且</i> 过去 20 日年化波动率 &lt; 18%（强牛市），用 <b>Asym120</b>（下行波动率/上行波动率）信号砍 5；否则用 <b>A20</b>（过去 20 日累积夜盘收益 = retail over-buy）砍 5。<br>
   · 剩 10 只等权。<br>
   · <b>择时 gate</b>：在 R4 之上叠加周度仓位择时。SPY 跌破 200 日均线连续 8-9 周且回撤 ≥12% 才减仓，R4 自身动能回升即回补。每只分配 = 总金额 × gate 仓位 ÷ 持仓数；剩余持现金。<br>
+  · <b>V2@2 杠杆敏感门</b>（下拉切换）：盘位 L = clip(σT ÷ 近21日实现波动, 1, 2.0)，σT = 2.0 × 历史滚动中位波动——波动处于历史中位给满 2.0×，每高一分按比例卸一分；周频降杠杆、新日历月首个换仓周才升（快降慢升）。每只分配 = 总金额 × gate × <b>L</b> ÷ 持仓数，超过总金额部分为融资借款（利息自负）。回测（2010-2026）：CAGR 60.9% / 最大回撤 −39.7% / 最低保证金垫 45%。<b>风险</b>：无预警跳空是该门的结构性软肋（事后响应）；融资利率变化影响净收益。<br>
   · 边界提醒：R4 alpha 来源是 post-2009 retail-active era；2000-2008 期间 R4 不工作。每年 review 5y 滚动 R4-D alpha，若连续 3 年 &lt; 0 应降级回 v9_W (纯 Asym120)。
 </div>
 
@@ -278,7 +284,7 @@ const DATA = {
   "period_start": "2026-07-13",
   "period_end": "2026-07-17",
   "price_date": "2026-07-16",
-  "generated_at": "2026-07-17 07:43:21",
+  "generated_at": "2026-07-17 15:51:11",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 4.34,
@@ -287,6 +293,8 @@ const DATA = {
   "n_holdings": 10,
   "gate_pos": 1.0,
   "cash_pct": 0.0,
+  "lev_pos": 1.0,
+  "lev_cap": 2.0,
   "holdings": [
     {
       "ticker": "MU",
@@ -381,7 +389,7 @@ const DATA = {
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-07-17 07:43:21",
+  "generated_at": "2026-07-17 15:51:12",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -3095,6 +3103,18 @@ document.getElementById('m-gate-inv').textContent = (GATE_POS * 100).toFixed(0) 
 document.getElementById('m-gate-cash').textContent =
   ((DATA.cash_pct !== undefined ? DATA.cash_pct : (1 - GATE_POS) * 100)).toFixed(1) + '%';
 
+/* 杠杆敏感门盘位 (V2@2): lev_pos ∈ [1, lev_cap]; 旧数据无该字段时隐藏选项 */
+const LEV_POS = (DATA.lev_pos === undefined || DATA.lev_pos === null) ? null : DATA.lev_pos;
+const LEV_CAP = DATA.lev_cap || 2.0;
+if (LEV_POS === null) {
+  document.getElementById('lev-select').style.display = 'none';
+  document.getElementById('lev-label').style.display = 'none';
+}
+function levFactor() {
+  const sel = document.getElementById('lev-select');
+  return (sel && sel.value === '2' && LEV_POS) ? LEV_POS : 1;
+}
+
 function fmtMoney(v) {
   if (v === null || v === undefined || isNaN(v)) return '—';
   return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -3114,7 +3134,8 @@ let R4_TARGET = [];
 function recalc() {
   const cap = parseFloat(document.getElementById('capital').value) || 0;
   const n = DATA.n_holdings;
-  const perStock = n > 0 ? cap * GATE_POS / n : 0;
+  const LEV = levFactor();
+  const perStock = n > 0 ? cap * GATE_POS * LEV / n : 0;
   const activeSignal = DATA.holdings.length > 0 ? DATA.holdings[0].signal_used : 'asym120';
 
   const tbody = document.getElementById('tbody');
@@ -3154,12 +3175,25 @@ function recalc() {
 
   const deployed = perStock * n;
   const cash = cap - deployed;
-  document.getElementById('deploy-line').innerHTML =
-    '→ gate 仓位 <b>' + (GATE_POS * 100).toFixed(0) + '%</b>：实际买入 <b>$'
-    + fmtMoney(deployed) + '</b>，留存现金 <b>$' + fmtMoney(cash) + '</b>';
+  if (LEV > 1) {
+    const effExpo = GATE_POS * LEV;
+    const borrow = Math.max(deployed - cap, 0);
+    document.getElementById('deploy-line').innerHTML =
+      '→ <b>V2@2</b>：敏感门盘位 <b>L = ' + LEV.toFixed(2) + '×</b>（上限 ' + LEV_CAP.toFixed(1)
+      + '）× gate 仓位 ' + (GATE_POS * 100).toFixed(0) + '% = 有效敞口 <b>'
+      + (effExpo * 100).toFixed(0) + '%</b>：目标持仓 <b>$' + fmtMoney(deployed)
+      + '</b>，自有资金 $' + fmtMoney(cap)
+      + (borrow > 0 ? '，<b style="color:#b91c1c">融资借款 $' + fmtMoney(borrow) + '</b>'
+                    : '，留存现金 $' + fmtMoney(cash));
+  } else {
+    document.getElementById('deploy-line').innerHTML =
+      '→ gate 仓位 <b>' + (GATE_POS * 100).toFixed(0) + '%</b>：实际买入 <b>$'
+      + fmtMoney(deployed) + '</b>，留存现金 <b>$' + fmtMoney(cash) + '</b>';
+  }
 
   document.getElementById('s-alloc').textContent =
-    fmtMoney(deployed) + (GATE_POS < 1 ? '  (现金 ' + fmtMoney(cash) + ')' : '');
+    fmtMoney(deployed) + (cash > 0.005 ? '  (现金 ' + fmtMoney(cash) + ')'
+                          : (cash < -0.005 ? '  (借款 ' + fmtMoney(-cash) + ')' : ''));
   document.getElementById('s-shares').textContent = '—';
   const diff = totalRealCost - deployed;
   const diffStr = (diff >= 0 ? '+' : '−') + fmtMoney(Math.abs(diff));
@@ -3169,6 +3203,7 @@ function recalc() {
   if (typeof rbRecalc === 'function') rbRecalc();
 }
 document.getElementById('capital').addEventListener('input', recalc);
+document.getElementById('lev-select').addEventListener('change', recalc);
 recalc();
 
 /* ==================== 换仓助手 (R4 视图) ==================== */
