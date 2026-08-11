@@ -283,8 +283,8 @@ const DATA = {
   "signal_date": "2026-08-07",
   "period_start": "2026-08-10",
   "period_end": "2026-08-14",
-  "price_date": "2026-08-07",
-  "generated_at": "2026-08-08 08:46:19",
+  "price_date": "2026-08-10",
+  "generated_at": "2026-08-11 08:29:06",
   "regime": "asym",
   "signal_used": "Asym120",
   "spy_20d_ret_pct": 2.43,
@@ -302,8 +302,8 @@ const DATA = {
       "asym120": 0.764,
       "a20": 0.0105,
       "signal_used": "asym120",
-      "price": 877.57,
-      "price_date": "2026-08-07"
+      "price": 861.0,
+      "price_date": "2026-08-10"
     },
     {
       "ticker": "SNDK",
@@ -311,8 +311,8 @@ const DATA = {
       "asym120": 0.7876,
       "a20": -0.0497,
       "signal_used": "asym120",
-      "price": 1212.21,
-      "price_date": "2026-08-07"
+      "price": 1237.92,
+      "price_date": "2026-08-10"
     },
     {
       "ticker": "MSFT",
@@ -320,8 +320,8 @@ const DATA = {
       "asym120": 0.4907,
       "a20": 0.1618,
       "signal_used": "asym120",
-      "price": 499.99,
-      "price_date": "2026-08-07"
+      "price": 506.06,
+      "price_date": "2026-08-10"
     },
     {
       "ticker": "AMD",
@@ -329,8 +329,8 @@ const DATA = {
       "asym120": 0.6524,
       "a20": 0.0047,
       "signal_used": "asym120",
-      "price": 483.36,
-      "price_date": "2026-08-07"
+      "price": 469.56,
+      "price_date": "2026-08-10"
     },
     {
       "ticker": "AMZN",
@@ -338,8 +338,8 @@ const DATA = {
       "asym120": 0.5365,
       "a20": 0.1348,
       "signal_used": "asym120",
-      "price": 274.48,
-      "price_date": "2026-08-07"
+      "price": 278.09,
+      "price_date": "2026-08-10"
     },
     {
       "ticker": "GOOGL",
@@ -347,8 +347,8 @@ const DATA = {
       "asym120": 0.7411,
       "a20": -0.0208,
       "signal_used": "asym120",
-      "price": 354.3,
-      "price_date": "2026-08-07"
+      "price": 357.52,
+      "price_date": "2026-08-10"
     },
     {
       "ticker": "INTC",
@@ -356,8 +356,8 @@ const DATA = {
       "asym120": 0.6209,
       "a20": 0.0626,
       "signal_used": "asym120",
-      "price": 101.65,
-      "price_date": "2026-08-07"
+      "price": 97.52,
+      "price_date": "2026-08-10"
     },
     {
       "ticker": "GOOG",
@@ -365,8 +365,8 @@ const DATA = {
       "asym120": 0.7149,
       "a20": -0.0305,
       "signal_used": "asym120",
-      "price": 353.47,
-      "price_date": "2026-08-07"
+      "price": 355.84,
+      "price_date": "2026-08-10"
     },
     {
       "ticker": "PLTR",
@@ -374,8 +374,8 @@ const DATA = {
       "asym120": 0.5114,
       "a20": 0.0976,
       "signal_used": "asym120",
-      "price": 172.01,
-      "price_date": "2026-08-07"
+      "price": 175.23,
+      "price_date": "2026-08-10"
     },
     {
       "ticker": "MRVL",
@@ -383,13 +383,13 @@ const DATA = {
       "asym120": 0.7161,
       "a20": 0.1631,
       "signal_used": "asym120",
-      "price": 218.72,
-      "price_date": "2026-08-07"
+      "price": 208.56,
+      "price_date": "2026-08-10"
     }
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-08-08 08:46:19",
+  "generated_at": "2026-08-11 08:29:06",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -1843,6 +1843,17 @@ const DATA_INDEX = {
       "qqq_total_assets": 57562.94,
       "total_assets": 111957.8,
       "explanation": "QQQ 趋势/反转/抄底信号触发，但 ma55 风险窗口期，buy 被一票否决；SPY 趋势/反转/抄底信号触发，但 ma55 风险窗口期，buy 被一票否决"
+    },
+    {
+      "trade_date": "2026-08-10",
+      "spy_action": "无操作",
+      "qqq_action": "跳过卖出（min_profit）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 54378.68,
+      "qqq_total_assets": 57390.97,
+      "total_assets": 111769.65,
+      "explanation": "QQQ close_55 卖出 200% 触发，但当前价 $720.87 < 平均成本 $628.03×1.30 = $816.44，跳过"
     }
   ],
   "prices": {
@@ -2386,6 +2397,10 @@ const DATA_INDEX = {
       {
         "date": "2026-08-07",
         "adjusted_close": 773.26
+      },
+      {
+        "date": "2026-08-10",
+        "adjusted_close": 773.03
       }
     ],
     "qqq": [
@@ -2928,6 +2943,10 @@ const DATA_INDEX = {
       {
         "date": "2026-08-07",
         "adjusted_close": 723.03
+      },
+      {
+        "date": "2026-08-10",
+        "adjusted_close": 720.87
       }
     ]
   }
@@ -2936,7 +2955,7 @@ const DATA_LOWVOL = {
   "rebalance_date": "2026-07-31",
   "period_start": "2026-08-03",
   "period_end": "2026-08-31",
-  "price_date": "2026-08-07",
+  "price_date": "2026-08-10",
   "generated_at": "2026-08-01 07:43:43",
   "blend_ratio": 0.35,
   "default_capital": 100000.0,
@@ -2950,140 +2969,140 @@ const DATA_LOWVOL = {
           "name": "Applied Materials",
           "rank_ma": 16,
           "weight": 0.031821,
-          "price": 539.14
+          "price": 522.12
         },
         {
           "ticker": "MRVL",
           "name": "Marvell Technology",
           "rank_ma": 14,
           "weight": 0.031821,
-          "price": 218.72
+          "price": 208.56
         },
         {
           "ticker": "WDC",
           "name": "Western Digital",
           "rank_ma": 19,
           "weight": 0.031821,
-          "price": 434.3
+          "price": 438.34
         },
         {
           "ticker": "UNH",
           "name": "UnitedHealth Group",
           "rank_ma": 35,
           "weight": 0.031821,
-          "price": 407.08
+          "price": 408.74
         },
         {
           "ticker": "STX",
           "name": "Seagate Technology",
           "rank_ma": 17,
           "weight": 0.031821,
-          "price": 812.76
+          "price": 800.99
         },
         {
           "ticker": "SNDK",
           "name": "Sandisk",
           "rank_ma": 3,
           "weight": 0.031821,
-          "price": 1212.21
+          "price": 1237.92
         },
         {
           "ticker": "AMD",
           "name": "Advanced Micro Devices",
           "rank_ma": 6,
           "weight": 0.031821,
-          "price": 483.36
+          "price": 469.56
         },
         {
           "ticker": "MU",
           "name": "Micron Technology",
           "rank_ma": 1,
           "weight": 0.031821,
-          "price": 877.57
+          "price": 861.0
         },
         {
           "ticker": "PANW",
           "name": "Palo Alto Networks",
           "rank_ma": 38,
           "weight": 0.031821,
-          "price": 363.86
+          "price": 385.04
         },
         {
           "ticker": "LLY",
           "name": "Lilly (Eli)",
           "rank_ma": 32,
           "weight": 0.031821,
-          "price": 1185.71
+          "price": 1231.9399
         },
         {
           "ticker": "INTC",
           "name": "Intel",
           "rank_ma": 8,
           "weight": 0.031821,
-          "price": 101.65
+          "price": 97.52
         },
         {
           "ticker": "HOOD",
           "name": "Robinhood Markets",
           "rank_ma": 36,
           "weight": 0.031821,
-          "price": 93.29
+          "price": 94.52
         },
         {
           "ticker": "DELL",
           "name": "Dell Technologies",
           "rank_ma": 25,
           "weight": 0.031821,
-          "price": 453.77
+          "price": 457.88
         },
         {
           "ticker": "CSCO",
           "name": "Cisco",
           "rank_ma": 33,
           "weight": 0.031821,
-          "price": 121.43
+          "price": 122.57
         },
         {
           "ticker": "CRWD",
           "name": "CrowdStrike",
           "rank_ma": 49,
           "weight": 0.031821,
-          "price": 214.42
+          "price": 225.16
         },
         {
           "ticker": "AAPL",
           "name": "Apple Inc.",
           "rank_ma": 4,
           "weight": 0.008488,
-          "price": 313.33
+          "price": 308.26
         },
         {
           "ticker": "CAT",
           "name": "Caterpillar Inc.",
           "rank_ma": 29,
           "weight": 0.008488,
-          "price": 842.19
+          "price": 837.58
         },
         {
           "ticker": "KLAC",
           "name": "KLA Corporation",
           "rank_ma": 28,
           "weight": 0.008488,
-          "price": 198.11
+          "price": 192.74
         },
         {
           "ticker": "LRCX",
           "name": "Lam Research",
           "rank_ma": 20,
           "weight": 0.008488,
-          "price": 311.35
+          "price": 306.4
         },
         {
           "ticker": "TXN",
           "name": "Texas Instruments",
           "rank_ma": 39,
           "weight": 0.008488,
-          "price": 286.08
+          "price": 280.44
         }
       ]
     },
@@ -3096,105 +3115,105 @@ const DATA_LOWVOL = {
           "name": "Dell Technologies",
           "rank_ma": 25,
           "weight": 0.066667,
-          "price": 453.77
+          "price": 457.88
         },
         {
           "ticker": "MU",
           "name": "Micron Technology",
           "rank_ma": 1,
           "weight": 0.066667,
-          "price": 877.57
+          "price": 861.0
         },
         {
           "ticker": "PANW",
           "name": "Palo Alto Networks",
           "rank_ma": 38,
           "weight": 0.066667,
-          "price": 363.86
+          "price": 385.04
         },
         {
           "ticker": "AMD",
           "name": "Advanced Micro Devices",
           "rank_ma": 6,
           "weight": 0.066667,
-          "price": 483.36
+          "price": 469.56
         },
         {
           "ticker": "CRWD",
           "name": "CrowdStrike",
           "rank_ma": 49,
           "weight": 0.066667,
-          "price": 214.42
+          "price": 225.16
         },
         {
           "ticker": "SNDK",
           "name": "Sandisk",
           "rank_ma": 3,
           "weight": 0.066667,
-          "price": 1212.21
+          "price": 1237.92
         },
         {
           "ticker": "MRVL",
           "name": "Marvell Technology",
           "rank_ma": 14,
           "weight": 0.066667,
-          "price": 218.72
+          "price": 208.56
         },
         {
           "ticker": "STX",
           "name": "Seagate Technology",
           "rank_ma": 17,
           "weight": 0.066667,
-          "price": 812.76
+          "price": 800.99
         },
         {
           "ticker": "WDC",
           "name": "Western Digital",
           "rank_ma": 19,
           "weight": 0.066667,
-          "price": 434.3
+          "price": 438.34
         },
         {
           "ticker": "INTC",
           "name": "Intel",
           "rank_ma": 8,
           "weight": 0.066667,
-          "price": 101.65
+          "price": 97.52
         },
         {
           "ticker": "AMAT",
           "name": "Applied Materials",
           "rank_ma": 16,
           "weight": 0.066667,
-          "price": 539.14
+          "price": 522.12
         },
         {
           "ticker": "UNH",
           "name": "UnitedHealth Group",
           "rank_ma": 35,
           "weight": 0.066667,
-          "price": 407.08
+          "price": 408.74
         },
         {
           "ticker": "CSCO",
           "name": "Cisco",
           "rank_ma": 33,
           "weight": 0.066667,
-          "price": 121.43
+          "price": 122.57
         },
         {
           "ticker": "HOOD",
           "name": "Robinhood Markets",
           "rank_ma": 36,
           "weight": 0.066667,
-          "price": 93.29
+          "price": 94.52
         },
         {
           "ticker": "LLY",
           "name": "Lilly (Eli)",
           "rank_ma": 32,
           "weight": 0.066667,
-          "price": 1185.71
+          "price": 1231.9399
         }
       ]
     },
@@ -3207,140 +3226,140 @@ const DATA_LOWVOL = {
           "name": "Micron Technology",
           "rank_ma": 1,
           "weight": 0.013058,
-          "price": 877.57
+          "price": 861.0
         },
         {
           "ticker": "LRCX",
           "name": "Lam Research",
           "rank_ma": 20,
           "weight": 0.013058,
-          "price": 311.35
+          "price": 306.4
         },
         {
           "ticker": "LLY",
           "name": "Lilly (Eli)",
           "rank_ma": 32,
           "weight": 0.013058,
-          "price": 1185.71
+          "price": 1231.9399
         },
         {
           "ticker": "HOOD",
           "name": "Robinhood Markets",
           "rank_ma": 36,
           "weight": 0.013058,
-          "price": 93.29
+          "price": 94.52
         },
         {
           "ticker": "MRVL",
           "name": "Marvell Technology",
           "rank_ma": 14,
           "weight": 0.013058,
-          "price": 218.72
+          "price": 208.56
         },
         {
           "ticker": "CRWD",
           "name": "CrowdStrike",
           "rank_ma": 49,
           "weight": 0.013058,
-          "price": 214.42
+          "price": 225.16
         },
         {
           "ticker": "PANW",
           "name": "Palo Alto Networks",
           "rank_ma": 38,
           "weight": 0.013058,
-          "price": 363.86
+          "price": 385.04
         },
         {
           "ticker": "UNH",
           "name": "UnitedHealth Group",
           "rank_ma": 35,
           "weight": 0.013058,
-          "price": 407.08
+          "price": 408.74
         },
         {
           "ticker": "CSCO",
           "name": "Cisco",
           "rank_ma": 33,
           "weight": 0.013058,
-          "price": 121.43
+          "price": 122.57
         },
         {
           "ticker": "AMD",
           "name": "Advanced Micro Devices",
           "rank_ma": 6,
           "weight": 0.013058,
-          "price": 483.36
+          "price": 469.56
         },
         {
           "ticker": "DELL",
           "name": "Dell Technologies",
           "rank_ma": 25,
           "weight": 0.013058,
-          "price": 453.77
+          "price": 457.88
         },
         {
           "ticker": "TXN",
           "name": "Texas Instruments",
           "rank_ma": 39,
           "weight": 0.013058,
-          "price": 286.08
+          "price": 280.44
         },
         {
           "ticker": "KLAC",
           "name": "KLA Corporation",
           "rank_ma": 28,
           "weight": 0.013058,
-          "price": 198.11
+          "price": 192.74
         },
         {
           "ticker": "STX",
           "name": "Seagate Technology",
           "rank_ma": 17,
           "weight": 0.013058,
-          "price": 812.76
+          "price": 800.99
         },
         {
           "ticker": "CAT",
           "name": "Caterpillar Inc.",
           "rank_ma": 29,
           "weight": 0.013058,
-          "price": 842.19
+          "price": 837.58
         },
         {
           "ticker": "WDC",
           "name": "Western Digital",
           "rank_ma": 19,
           "weight": 0.013058,
-          "price": 434.3
+          "price": 438.34
         },
         {
           "ticker": "SNDK",
           "name": "Sandisk",
           "rank_ma": 3,
           "weight": 0.013058,
-          "price": 1212.21
+          "price": 1237.92
         },
         {
           "ticker": "AMAT",
           "name": "Applied Materials",
           "rank_ma": 16,
           "weight": 0.013058,
-          "price": 539.14
+          "price": 522.12
         },
         {
           "ticker": "INTC",
           "name": "Intel",
           "rank_ma": 8,
           "weight": 0.013058,
-          "price": 101.65
+          "price": 97.52
         },
         {
           "ticker": "AAPL",
           "name": "Apple Inc.",
           "rank_ma": 4,
           "weight": 0.013058,
-          "price": 313.33
+          "price": 308.26
         }
       ]
     }
