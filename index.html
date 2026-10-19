@@ -82,7 +82,7 @@
 </div>
 
 <div class="meta" style="font-size:96%;color:#1f2937">
-  <b>持仓作用期：</b><code id="m-period"></code> &nbsp;（周一调仓 → 持有至周五）
+  <b>持仓作用期：</b><code id="m-period"></code> &nbsp;<span id="m-cadence">（周一调仓 → 持有至周五）</span>
 </div>
 
 <div id="regime-box" class="regime-box">
@@ -152,7 +152,7 @@
 
 <div id="rb-result"></div>
 
-<div class="footnote">
+<div class="footnote" id="hot-rules">
   · <b>R4 规则</b>：每周一调仓。在最近周五的 SP500 池里按 20 日成交额排名取 top 15。<br>
   · <b>Regime 切换</b>：若 SPY 过去 20 日收益 &gt; 0 <i>且</i> 过去 20 日年化波动率 &lt; 18%（强牛市），用 <b>Asym120</b>（下行波动率/上行波动率）信号砍 5；否则用 <b>A20</b>（过去 20 日累积夜盘收益 = retail over-buy）砍 5。<br>
   · 剩 10 只等权。<br>
@@ -279,117 +279,101 @@
 
 <script>
 const DATA = {
-  "strategy": "R4 (regime-conditional Asym120 + A20) + timing gate",
-  "signal_date": "2026-10-16",
+  "strategy": "B + R4 + mixed 门（前10剔3持7，月度选股）",
+  "strategy_version": "b_r4_monthly_20261015",
+  "signal_date": "2026-09-30",
+  "selection_date": "2026-10-01",
+  "gate_signal_date": "2026-10-16",
+  "risk_rebalance_date": "2026-10-19",
   "period_start": "2026-10-19",
   "period_end": "2026-10-23",
   "price_date": "2026-10-16",
-  "generated_at": "2026-10-17 08:02:14",
+  "generated_at": "2026-10-19 11:34:34",
   "regime": "asym",
   "signal_used": "Asym120",
-  "spy_20d_ret_pct": 0.2,
-  "spy_20d_vol_pct": 10.47,
+  "spy_20d_ret_pct": 0.3601558745360611,
+  "spy_20d_vol_pct": 10.80229320579036,
   "spy_vol_threshold": 18.0,
-  "n_holdings": 10,
+  "n_holdings": 7,
   "gate_pos": 1.0,
   "cash_pct": 0.0,
-  "lev_pos": 1.2774,
+  "lev_pos": 1.2996655735320903,
   "lev_cap": 2.0,
   "holdings": [
     {
       "ticker": "MU",
       "name": "MICRON TECHNOLOGY",
-      "asym120": 0.7301,
-      "a20": -0.1509,
-      "signal_used": "asym120",
       "price": 878.84,
-      "price_date": "2026-10-16"
+      "price_date": "2026-10-16",
+      "signal_used": "asym120",
+      "asym120": 0.764000767804229,
+      "a20": 0.0419559838503778,
+      "weight": 0.13127604516625196
+    },
+    {
+      "ticker": "NVDA",
+      "name": "NVIDIA",
+      "price": 214.13,
+      "price_date": "2026-10-16",
+      "signal_used": "asym120",
+      "asym120": 0.8600246461319159,
+      "a20": 0.06835262759957272,
+      "weight": 0.1520187445175425
     },
     {
       "ticker": "SNDK",
       "name": "Sandisk",
-      "asym120": 0.7195,
-      "a20": -0.212,
-      "signal_used": "asym120",
       "price": 1299.3,
-      "price_date": "2026-10-16"
-    },
-    {
-      "ticker": "AMD",
-      "name": "AMD",
-      "asym120": 0.6714,
-      "a20": -0.0957,
+      "price_date": "2026-10-16",
       "signal_used": "asym120",
-      "price": 528.75,
-      "price_date": "2026-10-16"
-    },
-    {
-      "ticker": "INTC",
-      "name": "INTEL",
-      "asym120": 0.6888,
-      "a20": -0.1299,
-      "signal_used": "asym120",
-      "price": 89.85,
-      "price_date": "2026-10-16"
-    },
-    {
-      "ticker": "MSFT",
-      "name": "MICROSOFT",
-      "asym120": 0.463,
-      "a20": 0.0719,
-      "signal_used": "asym120",
-      "price": 529.05,
-      "price_date": "2026-10-16"
-    },
-    {
-      "ticker": "AMZN",
-      "name": "AMAZON",
-      "asym120": 0.4699,
-      "a20": -0.0233,
-      "signal_used": "asym120",
-      "price": 250.0,
-      "price_date": "2026-10-16"
+      "asym120": 0.7500773810058807,
+      "a20": 0.03090548144180638,
+      "weight": 0.11912024219877738
     },
     {
       "ticker": "GOOGL",
       "name": "ALPHABET",
-      "asym120": 0.8035,
-      "a20": 0.0473,
-      "signal_used": "asym120",
       "price": 340.59,
-      "price_date": "2026-10-16"
+      "price_date": "2026-10-16",
+      "signal_used": "asym120",
+      "asym120": 0.8057456090499975,
+      "a20": 0.03658111393642871,
+      "weight": 0.16503469038647595
     },
     {
-      "ticker": "GOOG",
-      "name": "ALPHABET",
-      "asym120": 0.7537,
-      "a20": 0.0489,
+      "ticker": "AMD",
+      "name": "AMD",
+      "price": 528.75,
+      "price_date": "2026-10-16",
       "signal_used": "asym120",
-      "price": 336.91,
-      "price_date": "2026-10-16"
+      "asym120": 0.6439830176407643,
+      "a20": 0.06894653560445585,
+      "weight": 0.1407435114321572
     },
     {
-      "ticker": "MRVL",
-      "name": "Marvell Technology",
-      "asym120": 0.7695,
-      "a20": -0.0941,
+      "ticker": "INTC",
+      "name": "INTEL",
+      "price": 89.85,
+      "price_date": "2026-10-16",
       "signal_used": "asym120",
-      "price": 227.83,
-      "price_date": "2026-10-16"
+      "asym120": 0.6141962741739739,
+      "a20": 0.07877730746865597,
+      "weight": 0.12271711908789401
     },
     {
-      "ticker": "LITE",
-      "name": "Lumentum",
-      "asym120": 0.7669,
-      "a20": -0.0621,
+      "ticker": "MSFT",
+      "name": "MICROSOFT",
+      "price": 529.05,
+      "price_date": "2026-10-16",
       "signal_used": "asym120",
-      "price": 824.13,
-      "price_date": "2026-10-16"
+      "asym120": 0.48307426455500546,
+      "a20": -0.015902233639257357,
+      "weight": 0.169089647210901
     }
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-10-17 08:02:14",
+  "generated_at": "2026-10-19 11:34:34",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -4162,6 +4146,20 @@ document.getElementById('strategy-select').addEventListener('change', function (
 });
 
 /* ==================== HotTrading 视图初始化 (原逻辑不变) ==================== */
+
+const IS_B_R4 = DATA.strategy_version === 'b_r4_monthly_20261015';
+if (IS_B_R4) {
+  document.getElementById('m-cadence').textContent = '（月度选股，周度更新门和杠杆）';
+  document.getElementById('lev-select').options[0].textContent = 'B+R4（不加杠杆）';
+  document.getElementById('lev-select').options[1].textContent = 'B+R4（动态杠杆≤2.0）';
+  document.getElementById('hot-rules').innerHTML =
+    '· <b>选股</b>：每月首个交易日，按前一交易日成交额占比20日均值取前10名；同公司多类股先合并。<br>'
+    + '· <b>剔除</b>：SPY近20日收益&gt;0且年化波动&lt;18%时剔Asym120最高3只，否则剔A20最高3只，余7只等权，当日收盘执行。<br>'
+    + '· <b>仓位</b>：月内保留原篮子，权重随价格漂移；每周首个交易日收盘调整mixed门及杠杆。SPY连续8/9周低于MA200且距252日高点回撤≥12%出场，策略自身动量回升回补，共6个子门取平均。<br>'
+    + '· <b>动态杠杆</b>：目标波动=2.0×自身历史波动扩张窗中位数，L限制在1至2倍；每周可降，新日历月首个周度调仓日才可升。<br>'
+    + '· <b>信号日期</b>：月度选股 ' + DATA.signal_date + '；周度风控 ' + DATA.gate_signal_date + '。每只目标金额=权益×门仓位×杠杆×月内漂移权重。';
+}
+
 document.getElementById('m-strategy').textContent = DATA.strategy;
 document.getElementById('m-signal').textContent = DATA.signal_date;
 document.getElementById('m-price').textContent = DATA.price_date;
@@ -4217,7 +4215,7 @@ function recalc() {
   const cap = parseFloat(document.getElementById('capital').value) || 0;
   const n = DATA.n_holdings;
   const LEV = levFactor();
-  const perStock = n > 0 ? cap * GATE_POS * LEV / n : 0;
+  let deployed = 0;
   const activeSignal = DATA.holdings.length > 0 ? DATA.holdings[0].signal_used : 'asym120';
 
   const tbody = document.getElementById('tbody');
@@ -4227,6 +4225,9 @@ function recalc() {
   let totalRealCost = 0;
 
   DATA.holdings.forEach(h => {
+    const basketWeight = (h.weight === undefined || h.weight === null) ? (n > 0 ? 1 / n : 0) : h.weight;
+    const perStock = cap * GATE_POS * LEV * basketWeight;
+    deployed += perStock;
     const price = h.price;
     let shares = 0;
     if (price && price > 0) shares = perStock / price;
@@ -4255,13 +4256,12 @@ function recalc() {
     tbody.appendChild(tr);
   });
 
-  const deployed = perStock * n;
   const cash = cap - deployed;
   if (LEV > 1) {
     const effExpo = GATE_POS * LEV;
     const borrow = Math.max(deployed - cap, 0);
     document.getElementById('deploy-line').innerHTML =
-      '→ <b>V2@2</b>：敏感门盘位 <b>L = ' + LEV.toFixed(2) + '×</b>（上限 ' + LEV_CAP.toFixed(1)
+      '→ <b>' + (IS_B_R4 ? 'B+R4 动态杠杆' : 'V2@2') + '</b>：盘位 <b>L = ' + LEV.toFixed(2) + '×</b>（上限 ' + LEV_CAP.toFixed(1)
       + '）× gate 仓位 ' + (GATE_POS * 100).toFixed(0) + '% = 有效敞口 <b>'
       + (effExpo * 100).toFixed(0) + '%</b>：目标持仓 <b>$' + fmtMoney(deployed)
       + '</b>，自有资金 $' + fmtMoney(cap)
