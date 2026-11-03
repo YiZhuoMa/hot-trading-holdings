@@ -287,8 +287,8 @@ const DATA = {
   "risk_rebalance_date": "2026-11-02",
   "period_start": "2026-11-02",
   "period_end": "2026-11-06",
-  "price_date": "2026-10-30",
-  "generated_at": "2026-10-31 08:06:14",
+  "price_date": "2026-11-02",
+  "generated_at": "2026-11-03 08:02:52",
   "regime": "overnight",
   "signal_used": "A20 (overnight)",
   "spy_20d_ret_pct": -1.808637804687896,
@@ -303,8 +303,8 @@ const DATA = {
     {
       "ticker": "MU",
       "name": "MICRON TECHNOLOGY",
-      "price": 884.74,
-      "price_date": "2026-10-30",
+      "price": 833.59,
+      "price_date": "2026-11-02",
       "signal_used": "a20",
       "asym120": 0.7695706177829155,
       "a20": -0.17471638593057892,
@@ -313,8 +313,8 @@ const DATA = {
     {
       "ticker": "NVDA",
       "name": "NVIDIA",
-      "price": 204.64,
-      "price_date": "2026-10-30",
+      "price": 202.06,
+      "price_date": "2026-11-02",
       "signal_used": "a20",
       "asym120": 0.9110406591183388,
       "a20": -0.026640243833303545,
@@ -323,8 +323,8 @@ const DATA = {
     {
       "ticker": "GOOGL",
       "name": "ALPHABET",
-      "price": 279.84,
-      "price_date": "2026-10-30",
+      "price": 278.99,
+      "price_date": "2026-11-02",
       "signal_used": "a20",
       "asym120": 1.4524841340867471,
       "a20": -0.12037597813421164,
@@ -333,8 +333,8 @@ const DATA = {
     {
       "ticker": "META",
       "name": "META PLATFORMS",
-      "price": 614.99,
-      "price_date": "2026-10-30",
+      "price": 606.73,
+      "price_date": "2026-11-02",
       "signal_used": "a20",
       "asym120": 0.8127307360571023,
       "a20": -0.06552319430037146,
@@ -343,8 +343,8 @@ const DATA = {
     {
       "ticker": "SNDK",
       "name": "Sandisk",
-      "price": 1150.89,
-      "price_date": "2026-10-30",
+      "price": 1075.08,
+      "price_date": "2026-11-02",
       "signal_used": "a20",
       "asym120": 0.7645230252507436,
       "a20": -0.23900807177954275,
@@ -353,8 +353,8 @@ const DATA = {
     {
       "ticker": "AMD",
       "name": "AMD",
-      "price": 504.8,
-      "price_date": "2026-10-30",
+      "price": 466.84,
+      "price_date": "2026-11-02",
       "signal_used": "a20",
       "asym120": 0.9491953382885729,
       "a20": -0.21384804165463178,
@@ -363,8 +363,8 @@ const DATA = {
     {
       "ticker": "INTC",
       "name": "INTEL",
-      "price": 65.76,
-      "price_date": "2026-10-30",
+      "price": 59.97,
+      "price_date": "2026-11-02",
       "signal_used": "a20",
       "asym120": 1.2385063803160292,
       "a20": -0.3673875668963903,
@@ -373,7 +373,7 @@ const DATA = {
   ]
 };
 const DATA_INDEX = {
-  "generated_at": "2026-10-31 08:06:14",
+  "generated_at": "2026-11-03 08:02:52",
   "start_date": "2026-01-26",
   "rows": [
     {
@@ -2344,6 +2344,17 @@ const DATA_INDEX = {
       "qqq_total_assets": 54972.31,
       "total_assets": 108133.32,
       "explanation": "QQQ close_55 卖出 200% 触发，但当前价 $690.49 < 平均成本 $628.03×1.30 = $816.44，跳过"
+    },
+    {
+      "trade_date": "2026-11-02",
+      "spy_action": "无操作",
+      "qqq_action": "跳过卖出（min_profit）",
+      "spy_avg_cost": 710.7841,
+      "qqq_avg_cost": 628.0343,
+      "spy_total_assets": 52906.36,
+      "qqq_total_assets": 54223.95,
+      "total_assets": 107130.31,
+      "explanation": "QQQ close_55 卖出 250% 触发，但当前价 $681.09 < 平均成本 $628.03×1.30 = $816.44，跳过"
     }
   ],
   "prices": {
@@ -3123,6 +3134,10 @@ const DATA_INDEX = {
       {
         "date": "2026-10-30",
         "adjusted_close": 755.72
+      },
+      {
+        "date": "2026-11-02",
+        "adjusted_close": 752.1
       }
     ],
     "qqq": [
@@ -3901,6 +3916,10 @@ const DATA_INDEX = {
       {
         "date": "2026-10-30",
         "adjusted_close": 690.49
+      },
+      {
+        "date": "2026-11-02",
+        "adjusted_close": 681.09
       }
     ]
   }
@@ -3909,7 +3928,7 @@ const DATA_LOWVOL = {
   "rebalance_date": "2026-10-30",
   "period_start": "2026-11-02",
   "period_end": "2026-11-30",
-  "price_date": "2026-10-30",
+  "price_date": "2026-11-02",
   "generated_at": "2026-10-31 08:05:32",
   "blend_ratio": 0.35,
   "default_capital": 100000.0,
@@ -3923,140 +3942,140 @@ const DATA_LOWVOL = {
           "name": "APPLE",
           "rank_ma": 5,
           "weight": 0.049758,
-          "price": 344.63
+          "price": 338.32
         },
         {
           "ticker": "MSFT",
           "name": "MICROSOFT",
           "rank_ma": 7,
           "weight": 0.049758,
-          "price": 521.91
+          "price": 507.12
         },
         {
           "ticker": "XOM",
           "name": "EXXON MOBIL",
           "rank_ma": 38,
           "weight": 0.049758,
-          "price": 187.25
+          "price": 179.67
         },
         {
           "ticker": "V",
           "name": "VISA",
           "rank_ma": 29,
           "weight": 0.049758,
-          "price": 413.59
+          "price": 425.51
         },
         {
           "ticker": "PLTR",
           "name": "PALANTIR TECHNOLOGIES",
           "rank_ma": 16,
           "weight": 0.049758,
-          "price": 184.11
+          "price": 178.34
         },
         {
           "ticker": "PANW",
           "name": "PALO ALTO NETWORKS",
           "rank_ma": 41,
           "weight": 0.049758,
-          "price": 365.87
+          "price": 351.72
         },
         {
           "ticker": "CRWD",
           "name": "CROWDSTRIKE",
           "rank_ma": 33,
           "weight": 0.049758,
-          "price": 250.43
+          "price": 241.81
         },
         {
           "ticker": "NOW",
           "name": "SERVICENOW",
           "rank_ma": 36,
           "weight": 0.049758,
-          "price": 105.12
+          "price": 106.01
         },
         {
           "ticker": "NVDA",
           "name": "NVIDIA",
           "rank_ma": 2,
           "weight": 0.049758,
-          "price": 204.64
+          "price": 202.06
         },
         {
           "ticker": "MRNA",
           "name": "MODERNA",
           "rank_ma": 18,
           "weight": 0.049758,
-          "price": 221.72
+          "price": 220.83
         },
         {
           "ticker": "META",
           "name": "META PLATFORMS",
           "rank_ma": 3,
           "weight": 0.049758,
-          "price": 614.99
+          "price": 606.73
         },
         {
           "ticker": "MDT",
           "name": "MEDTRONIC",
           "rank_ma": 27,
           "weight": 0.049758,
-          "price": 96.54
+          "price": 99.29
         },
         {
           "ticker": "MA",
           "name": "MASTERCARD",
           "rank_ma": 47,
           "weight": 0.049758,
-          "price": 638.01
+          "price": 658.1
         },
         {
           "ticker": "LITE",
           "name": "Lumentum",
           "rank_ma": 15,
           "weight": 0.049758,
-          "price": 840.7
+          "price": 684.4
         },
         {
           "ticker": "DELL",
           "name": "DELL TECHNOLOGIES",
           "rank_ma": 22,
           "weight": 0.049758,
-          "price": 424.3
+          "price": 392.78
         },
         {
           "ticker": "AMD",
           "name": "AMD",
           "rank_ma": 8,
           "weight": 0.026425,
-          "price": 504.8
+          "price": 466.84
         },
         {
           "ticker": "HOOD",
           "name": "Robinhood Markets",
           "rank_ma": 46,
           "weight": 0.026425,
-          "price": 84.99
+          "price": 83.84
         },
         {
           "ticker": "JNJ",
           "name": "JOHNSON & JOHNSON",
           "rank_ma": 43,
           "weight": 0.026425,
-          "price": 273.2
+          "price": 270.56
         },
         {
           "ticker": "LLY",
           "name": "ELI LILLY",
           "rank_ma": 23,
           "weight": 0.026425,
-          "price": 1417.54
+          "price": 1410.99
         },
         {
           "ticker": "MU",
           "name": "MICRON TECHNOLOGY",
           "rank_ma": 1,
           "weight": 0.026425,
-          "price": 884.74
+          "price": 833.59
         }
       ]
     },
@@ -4069,105 +4088,105 @@ const DATA_LOWVOL = {
           "name": "MODERNA",
           "rank_ma": 18,
           "weight": 0.066667,
-          "price": 221.72
+          "price": 220.83
         },
         {
           "ticker": "PLTR",
           "name": "PALANTIR TECHNOLOGIES",
           "rank_ma": 16,
           "weight": 0.066667,
-          "price": 184.11
+          "price": 178.34
         },
         {
           "ticker": "MSFT",
           "name": "MICROSOFT",
           "rank_ma": 7,
           "weight": 0.066667,
-          "price": 521.91
+          "price": 507.12
         },
         {
           "ticker": "CRWD",
           "name": "CROWDSTRIKE",
           "rank_ma": 33,
           "weight": 0.066667,
-          "price": 250.43
+          "price": 241.81
         },
         {
           "ticker": "NOW",
           "name": "SERVICENOW",
           "rank_ma": 36,
           "weight": 0.066667,
-          "price": 105.12
+          "price": 106.01
         },
         {
           "ticker": "XOM",
           "name": "EXXON MOBIL",
           "rank_ma": 38,
           "weight": 0.066667,
-          "price": 187.25
+          "price": 179.67
         },
         {
           "ticker": "DELL",
           "name": "DELL TECHNOLOGIES",
           "rank_ma": 22,
           "weight": 0.066667,
-          "price": 424.3
+          "price": 392.78
         },
         {
           "ticker": "MDT",
           "name": "MEDTRONIC",
           "rank_ma": 27,
           "weight": 0.066667,
-          "price": 96.54
+          "price": 99.29
         },
         {
           "ticker": "MA",
           "name": "MASTERCARD",
           "rank_ma": 47,
           "weight": 0.066667,
-          "price": 638.01
+          "price": 658.1
         },
         {
           "ticker": "V",
           "name": "VISA",
           "rank_ma": 29,
           "weight": 0.066667,
-          "price": 413.59
+          "price": 425.51
         },
         {
           "ticker": "LITE",
           "name": "Lumentum",
           "rank_ma": 15,
           "weight": 0.066667,
-          "price": 840.7
+          "price": 684.4
         },
         {
           "ticker": "META",
           "name": "META PLATFORMS",
           "rank_ma": 3,
           "weight": 0.066667,
-          "price": 614.99
+          "price": 606.73
         },
         {
           "ticker": "AAPL",
           "name": "APPLE",
           "rank_ma": 5,
           "weight": 0.066667,
-          "price": 344.63
+          "price": 338.32
         },
         {
           "ticker": "PANW",
           "name": "PALO ALTO NETWORKS",
           "rank_ma": 41,
           "weight": 0.066667,
-          "price": 365.87
+          "price": 351.72
         },
         {
           "ticker": "NVDA",
           "name": "NVIDIA",
           "rank_ma": 2,
           "weight": 0.066667,
-          "price": 204.64
+          "price": 202.06
         }
       ]
     },
@@ -4180,140 +4199,140 @@ const DATA_LOWVOL = {
           "name": "MICRON TECHNOLOGY",
           "rank_ma": 1,
           "weight": 0.040653,
-          "price": 884.74
+          "price": 833.59
         },
         {
           "ticker": "DELL",
           "name": "DELL TECHNOLOGIES",
           "rank_ma": 22,
           "weight": 0.040653,
-          "price": 424.3
+          "price": 392.78
         },
         {
           "ticker": "META",
           "name": "META PLATFORMS",
           "rank_ma": 3,
           "weight": 0.040653,
-          "price": 614.99
+          "price": 606.73
         },
         {
           "ticker": "LITE",
           "name": "Lumentum",
           "rank_ma": 15,
           "weight": 0.040653,
-          "price": 840.7
+          "price": 684.4
         },
         {
           "ticker": "MA",
           "name": "MASTERCARD",
           "rank_ma": 47,
           "weight": 0.040653,
-          "price": 638.01
+          "price": 658.1
         },
         {
           "ticker": "MDT",
           "name": "MEDTRONIC",
           "rank_ma": 27,
           "weight": 0.040653,
-          "price": 96.54
+          "price": 99.29
         },
         {
           "ticker": "XOM",
           "name": "EXXON MOBIL",
           "rank_ma": 38,
           "weight": 0.040653,
-          "price": 187.25
+          "price": 179.67
         },
         {
           "ticker": "V",
           "name": "VISA",
           "rank_ma": 29,
           "weight": 0.040653,
-          "price": 413.59
+          "price": 425.51
         },
         {
           "ticker": "JNJ",
           "name": "JOHNSON & JOHNSON",
           "rank_ma": 43,
           "weight": 0.040653,
-          "price": 273.2
+          "price": 270.56
         },
         {
           "ticker": "MSFT",
           "name": "MICROSOFT",
           "rank_ma": 7,
           "weight": 0.040653,
-          "price": 521.91
+          "price": 507.12
         },
         {
           "ticker": "PLTR",
           "name": "PALANTIR TECHNOLOGIES",
           "rank_ma": 16,
           "weight": 0.040653,
-          "price": 184.11
+          "price": 178.34
         },
         {
           "ticker": "NOW",
           "name": "SERVICENOW",
           "rank_ma": 36,
           "weight": 0.040653,
-          "price": 105.12
+          "price": 106.01
         },
         {
           "ticker": "MRNA",
           "name": "MODERNA",
           "rank_ma": 18,
           "weight": 0.040653,
-          "price": 221.72
+          "price": 220.83
         },
         {
           "ticker": "AAPL",
           "name": "APPLE",
           "rank_ma": 5,
           "weight": 0.040653,
-          "price": 344.63
+          "price": 338.32
         },
         {
           "ticker": "LLY",
           "name": "ELI LILLY",
           "rank_ma": 23,
           "weight": 0.040653,
-          "price": 1417.54
+          "price": 1410.99
         },
         {
           "ticker": "HOOD",
           "name": "Robinhood Markets",
           "rank_ma": 46,
           "weight": 0.040653,
-          "price": 84.99
+          "price": 83.84
         },
         {
           "ticker": "CRWD",
           "name": "CROWDSTRIKE",
           "rank_ma": 33,
           "weight": 0.040653,
-          "price": 250.43
+          "price": 241.81
         },
         {
           "ticker": "PANW",
           "name": "PALO ALTO NETWORKS",
           "rank_ma": 41,
           "weight": 0.040653,
-          "price": 365.87
+          "price": 351.72
         },
         {
           "ticker": "AMD",
           "name": "AMD",
           "rank_ma": 8,
           "weight": 0.040653,
-          "price": 504.8
+          "price": 466.84
         },
         {
           "ticker": "NVDA",
           "name": "NVIDIA",
           "rank_ma": 2,
           "weight": 0.040653,
-          "price": 204.64
+          "price": 202.06
         }
       ]
     }
